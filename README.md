@@ -2,6 +2,22 @@
 
 A collection of custom skills for [Claude Code](https://claude.ai/code) that extend Claude's capabilities with specialized workflows and utilities.
 
+## Quick Start
+
+```bash
+# 1. Add the marketplace
+/plugin marketplace add BillChirico/bills-claude-skills
+
+# 2. Install a skill
+/plugin install github-pr-resolver@bills-claude-skills
+
+# 3. Set up GitHub token
+export GITHUB_TOKEN="your_token"
+
+# 4. Use it!
+/resolve-pr https://github.com/owner/repo/pull/123
+```
+
 ## What are Claude Skills?
 
 Skills are structured prompts and helper utilities that give Claude Code specialized knowledge for specific tasks. Each skill includes:
