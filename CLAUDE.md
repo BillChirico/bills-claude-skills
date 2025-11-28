@@ -16,6 +16,8 @@ bills-claude-skills/
 │   │   └── github_pr_client.py
 │   └── references/        # API documentation
 │       └── github_api_reference.md
+├── git-workspace-init/     # Git worktree initialization skill
+│   └── SKILL.md           # Skill definition and workflow
 ```
 
 ## Skills Architecture
