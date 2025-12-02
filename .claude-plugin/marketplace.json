@@ -1,7 +1,10 @@
 {
   "name": "bills-claude-skills",
-  "version": "1.0.0",
-  "description": "A collection of custom Claude Code skills for Git workflow automation and GitHub PR management",
+  "metadata": {
+    "version": "1.0.0",
+    "description": "A collection of custom Claude Code skills for Git workflow automation and GitHub PR management",
+    "homepage": "https://github.com/BillChirico/bills-claude-skills"
+  },
   "owner": {
     "name": "BillChirico",
     "email": "bill@chirico.com"
@@ -10,12 +13,26 @@
     {
       "name": "github-pr-resolver",
       "source": "./github-pr-resolver",
-      "description": "Automate GitHub pull request review resolution by processing ALL review comments and fixing ALL failing CI checks."
+      "description": "Automate GitHub pull request review resolution by processing ALL review comments and fixing ALL failing CI checks.",
+      "version": "1.0.0",
+      "keywords": ["github", "pull-request", "code-review", "ci", "automation"],
+      "author": {
+        "name": "BillChirico"
+      },
+      "repository": "https://github.com/BillChirico/bills-claude-skills",
+      "license": "MIT"
     },
     {
       "name": "git-workspace-init",
       "source": "./git-workspace-init",
-      "description": "Initialize a new git worktree and branch for feature development or bug fixes."
+      "description": "Initialize a new git worktree and branch for feature development or bug fixes.",
+      "version": "1.0.0",
+      "keywords": ["git", "worktree", "branch", "workflow"],
+      "author": {
+        "name": "BillChirico"
+      },
+      "repository": "https://github.com/BillChirico/bills-claude-skills",
+      "license": "MIT"
     }
   ],
   "commands": [
