@@ -6,7 +6,7 @@
     "name": "BillChirico",
     "email": "bill@chirico.com"
   },
-  "skills": [
+  "plugins": [
     {
       "name": "github-pr-resolver",
       "source": "./github-pr-resolver",
@@ -21,7 +21,7 @@
   "commands": [
     {
       "name": "resolve-pr",
-      "path": "github-pr-resolver/commands/resolve-pr.md",
+      "path": "./github-pr-resolver/commands/resolve-pr.md",
       "description": "GitHub PR URL (e.g., https://github.com/owner/repo/pull/123) or PR number"
     }
   ]
