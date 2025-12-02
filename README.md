@@ -46,6 +46,24 @@ Automates pull request review resolution by processing comments, making fixes, a
 
 [View skill documentation →](github-pr-resolver/SKILL.md)
 
+### Git Workspace Init
+
+Initialize isolated git worktrees with proper branch naming following [conventional branch](https://conventional-branch.github.io/) conventions.
+
+**Capabilities:**
+- Generate branch names from task type and description
+- Create git worktrees for parallel development
+- Push new branches to remote with tracking
+- Support for all conventional types (feat, fix, hotfix, docs, refactor, etc.)
+
+**Use when:**
+- Starting work on a new feature
+- Beginning a bug fix or hotfix
+- Creating an isolated workspace for any task
+- Working on multiple branches simultaneously
+
+[View skill documentation →](git-workspace-init/SKILL.md)
+
 ## Installation
 
 ### Prerequisites
@@ -156,12 +174,14 @@ bills-claude-skills/
 ├── README.md                           # This file
 ├── CLAUDE.md                           # Instructions for Claude Code
 ├── LICENSE                             # MIT License
-└── github-pr-resolver/                 # PR resolution skill
-    ├── SKILL.md                        # Skill definition & workflow
-    ├── scripts/
-    │   └── github_pr_client.py         # GitHub API client
-    └── references/
-        └── github_api_reference.md     # API documentation
+├── github-pr-resolver/                 # PR resolution skill
+│   ├── SKILL.md                        # Skill definition & workflow
+│   ├── scripts/
+│   │   └── github_pr_client.py         # GitHub API client
+│   └── references/
+│       └── github_api_reference.md     # API documentation
+└── git-workspace-init/                 # Worktree initialization skill
+    └── SKILL.md                        # Skill definition & workflow
 ```
 
 ## Contributing
