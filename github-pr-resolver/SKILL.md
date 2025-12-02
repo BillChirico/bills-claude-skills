@@ -1,11 +1,13 @@
 ---
 name: github-pr-resolver
-description: "Automate GitHub pull request review resolution by processing review comments and fixing failing CI checks. Use when: (1) A PR has review comments that need to be addressed and resolved, (2) CI/CD checks are failing and need fixes, (3) You want to process all PR feedback and mark conversations as resolved, (4) You need to iterate on PR feedback quickly. This skill handles fetching PR context, understanding comment intent, making code fixes, resolving threads, and addressing check failures."
+description: "Automate GitHub pull request review resolution by processing ALL review comments and fixing ALL failing CI checks. Use when: (1) A PR has review comments that need to be addressed and resolved, (2) CI/CD checks are failing and need fixes, (3) You want to process all PR feedback and mark conversations as resolved, (4) You need to iterate on PR feedback quickly. IMPORTANT: This skill processes EVERY comment - no skipping allowed. Always fetches fresh data from GitHub. The only acceptable end state is zero unresolved threads."
 ---
 
 # GitHub PR Resolver
 
-Automate the process of addressing pull request review feedback by processing comments, making code fixes, resolving conversation threads, and fixing failing CI checks.
+Automate the process of addressing pull request review feedback by processing **ALL** comments, making code fixes, resolving **EVERY** conversation thread, and fixing **ALL** failing CI checks.
+
+**This skill does NOT skip any comments. Every unresolved thread must be addressed and resolved.**
 
 ## Prerequisites
 
@@ -22,12 +24,15 @@ Token requires `repo` scope for full repository access.
 ## Workflow Overview
 
 1. **Fetch PR context** → Get all review threads and check statuses (always fresh from GitHub)
-2. **Process unresolved threads** → Fix each comment, **commit individually**, and resolve
-3. **Fix failing checks** → Address failures, **commit per check type**
+2. **Process ALL unresolved threads** → Fix EVERY comment, **commit individually**, and resolve each one
+3. **Fix ALL failing checks** → Address every failure, **commit per check type**
 4. **Push changes** → Single push after all commits
-5. **Verify** → Re-fetch from GitHub and confirm threads resolved and checks passing
+5. **Verify** → Re-fetch from GitHub and confirm ALL threads resolved and ALL checks passing
 
-**IMPORTANT: Always fetch fresh data from GitHub. Never use cached or previously fetched context.**
+**CRITICAL REQUIREMENTS:**
+- **Always fetch fresh data from GitHub.** Never use cached or previously fetched context.
+- **Process EVERY unresolved comment.** Do NOT skip any threads. Each comment must be addressed and resolved.
+- **Zero unresolved threads** is the only acceptable end state.
 
 ## Commit Convention
 
@@ -136,9 +141,11 @@ print(f"Failing checks: {len(failing)}")
 
 **Note:** Each call to `get_full_pr_context()` makes fresh API calls to GitHub. There is no caching - data is always retrieved live.
 
-## Step 2: Process Review Threads
+## Step 2: Process ALL Review Threads
 
-For each unresolved thread:
+**MANDATORY: Process EVERY unresolved thread. Do NOT skip any comments.**
+
+For each unresolved thread (iterate through ALL of them):
 
 ### 2.1 Understand the Comment
 
@@ -158,14 +165,18 @@ for thread in unresolved:
 
 ### 2.2 Identify Fix Type
 
+**ALL comments require action. Determine the appropriate fix:**
+
 | Comment Pattern | Action Required |
 |----------------|-----------------|
 | Contains ` ```suggestion ` | Apply the suggested code directly |
 | "Typo", "rename", "change X to Y" | Make the specific text change |
 | "Add...", "Include...", "Missing..." | Add the requested code/content |
 | "Remove...", "Delete..." | Remove the specified code |
-| "Consider...", "Maybe...", "Nit:" | Optional improvement, apply if reasonable |
-| Question or discussion | May not require code changes |
+| "Consider...", "Maybe...", "Nit:" | Apply the improvement (these are still requests) |
+| Question or discussion | Address with code fix or reply, then resolve |
+
+**No comment is optional. Every thread must be addressed and resolved.**
 
 ### 2.3 Apply Code Suggestions
 
@@ -326,18 +337,29 @@ This triggers a single CI run for all changes rather than multiple runs per comm
 
 After pushing, the PR will update. **ALWAYS fetch fresh data from GitHub to verify** - never rely on previously fetched context:
 
-1. All threads show as resolved
+1. **ALL threads show as resolved** (zero unresolved remaining)
 2. CI checks are re-running
 3. No new failures introduced
 
 ```python
 # ALWAYS re-fetch fresh context from GitHub to verify current state
 context = get_full_pr_context(pr_url)  # Fresh API call, not cached
-print(f"Remaining unresolved: {len(context['unresolved_threads'])}")
-print(f"Remaining failures: {len(context['failing_checks'])}")
+unresolved_count = len(context['unresolved_threads'])
+failing_count = len(context['failing_checks'])
+
+print(f"Remaining unresolved: {unresolved_count}")
+print(f"Remaining failures: {failing_count}")
+
+# CRITICAL: If any threads remain unresolved, go back and fix them
+if unresolved_count > 0:
+    print("⚠️  INCOMPLETE: Still have unresolved threads. Must process ALL of them.")
+    # Go back to Step 2 and process remaining threads
 ```
 
-**Note:** Verification MUST use a fresh `get_full_pr_context()` call to ensure you see the actual current state on GitHub, not stale data.
+**IMPORTANT:**
+- Verification MUST use a fresh `get_full_pr_context()` call to ensure you see the actual current state on GitHub.
+- **If ANY unresolved threads remain, the task is NOT complete.** Go back and process them.
+- The only acceptable end state is **zero unresolved threads**.
 
 ## Complete Example
 
@@ -381,26 +403,34 @@ def extract_scope(file_path: str) -> str:
 
 
 def resolve_pr(pr_url: str):
-    """Complete workflow to resolve all PR feedback with per-change commits."""
+    """Complete workflow to resolve ALL PR feedback with per-change commits.
+
+    IMPORTANT: This function processes EVERY unresolved thread. No comments are skipped.
+    """
 
     # 1. Fetch FRESH context from GitHub (always live, never cached)
     ctx = get_full_pr_context(pr_url)  # Makes fresh API calls
     pr = ctx["pr"]
     client = ctx["client"]
+    repo = ctx["repo"]
 
+    total_threads = len(ctx["unresolved_threads"])
     print(f"Processing PR #{pr.number}: {pr.title}")
+    print(f"Found {total_threads} unresolved threads - will process ALL of them")
 
     # 2. Checkout PR branch
     subprocess.run(["git", "fetch", "origin", pr.head_ref], check=True)
     subprocess.run(["git", "checkout", pr.head_ref], check=True)
 
-    # 3. Process each unresolved thread (one commit per thread)
+    # 3. Process EVERY unresolved thread (one commit per thread) - NO SKIPPING
+    processed_count = 0
     for thread in ctx["unresolved_threads"]:
+        processed_count += 1
         path = thread["path"]
         line = thread["line"]
         comment = thread["comments"][0]["body"]
 
-        print(f"\n📝 Processing: {path}:{line}")
+        print(f"\n📝 Processing thread {processed_count}/{total_threads}: {path}:{line}")
         print(f"   Comment: {comment[:100]}...")
 
         # TODO: Analyze comment and make fix
@@ -418,7 +448,9 @@ def resolve_pr(pr_url: str):
 
         # Resolve the thread
         client.resolve_thread(thread["thread_id"])
-        print(f"   ✅ Resolved")
+        print(f"   ✅ Resolved ({processed_count}/{total_threads})")
+
+    print(f"\n✅ Processed all {processed_count} threads")
 
     # 4. Fix failing checks (one commit per check type)
     lint_fixed = False
@@ -454,7 +486,18 @@ def resolve_pr(pr_url: str):
     # 6. Push all commits at once
     subprocess.run(["git", "push", "origin", pr.head_ref], check=True)
 
-    print("\n✅ PR updated successfully!")
+    # 7. VERIFY: Re-fetch and confirm zero unresolved threads
+    print("\n🔍 Verifying all threads are resolved...")
+    ctx = get_full_pr_context(pr_url)  # Fresh fetch to verify
+    remaining = len(ctx["unresolved_threads"])
+
+    if remaining > 0:
+        print(f"⚠️  WARNING: {remaining} threads still unresolved!")
+        print("Must go back and process remaining threads.")
+        # Recursively process any remaining threads
+        return resolve_pr(pr_url)
+
+    print(f"\n✅ PR updated successfully! All {total_threads} threads resolved.")
 ```
 
 ## Reference
