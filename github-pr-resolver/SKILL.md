@@ -21,11 +21,13 @@ Token requires `repo` scope for full repository access.
 
 ## Workflow Overview
 
-1. **Fetch PR context** → Get all review threads and check statuses
+1. **Fetch PR context** → Get all review threads and check statuses (always fresh from GitHub)
 2. **Process unresolved threads** → Fix each comment, **commit individually**, and resolve
 3. **Fix failing checks** → Address failures, **commit per check type**
 4. **Push changes** → Single push after all commits
-5. **Verify** → Confirm threads resolved and checks passing
+5. **Verify** → Re-fetch from GitHub and confirm threads resolved and checks passing
+
+**IMPORTANT: Always fetch fresh data from GitHub. Never use cached or previously fetched context.**
 
 ## Commit Convention
 
@@ -107,18 +109,20 @@ def extract_suggestion(body: str) -> str | None:
     return match.group(1).rstrip() if match else None
 ```
 
-## Step 1: Fetch PR Context
+## Step 1: Fetch PR Context (Always Fresh)
+
+**CRITICAL: Always call `get_full_pr_context()` to fetch fresh data from GitHub. Never reuse previously fetched context data.**
 
 ```python
 from scripts.github_pr_client import get_full_pr_context
 
-# Using PR URL
+# Using PR URL - ALWAYS fetches fresh data from GitHub API
 context = get_full_pr_context("https://github.com/owner/repo/pull/123")
 
-# Or using PR number with repo
+# Or using PR number with repo - ALWAYS fetches fresh data
 context = get_full_pr_context("123", repo="owner/repo")
 
-# Access context data
+# Access context data (freshly fetched)
 pr = context["pr"]
 unresolved = context["unresolved_threads"]
 failing = context["failing_checks"]
@@ -129,6 +133,8 @@ print(f"Branch: {pr.head_ref}")
 print(f"Unresolved threads: {len(unresolved)}")
 print(f"Failing checks: {len(failing)}")
 ```
+
+**Note:** Each call to `get_full_pr_context()` makes fresh API calls to GitHub. There is no caching - data is always retrieved live.
 
 ## Step 2: Process Review Threads
 
@@ -316,20 +322,22 @@ git push origin {branch_name}
 
 This triggers a single CI run for all changes rather than multiple runs per commit.
 
-## Step 5: Verify Resolution
+## Step 5: Verify Resolution (Always Re-fetch)
 
-After pushing, the PR will update. Verify:
+After pushing, the PR will update. **ALWAYS fetch fresh data from GitHub to verify** - never rely on previously fetched context:
 
 1. All threads show as resolved
 2. CI checks are re-running
 3. No new failures introduced
 
 ```python
-# Re-fetch context to verify
-context = get_full_pr_context(pr_url)
+# ALWAYS re-fetch fresh context from GitHub to verify current state
+context = get_full_pr_context(pr_url)  # Fresh API call, not cached
 print(f"Remaining unresolved: {len(context['unresolved_threads'])}")
 print(f"Remaining failures: {len(context['failing_checks'])}")
 ```
+
+**Note:** Verification MUST use a fresh `get_full_pr_context()` call to ensure you see the actual current state on GitHub, not stale data.
 
 ## Complete Example
 
@@ -375,8 +383,8 @@ def extract_scope(file_path: str) -> str:
 def resolve_pr(pr_url: str):
     """Complete workflow to resolve all PR feedback with per-change commits."""
 
-    # 1. Fetch context
-    ctx = get_full_pr_context(pr_url)
+    # 1. Fetch FRESH context from GitHub (always live, never cached)
+    ctx = get_full_pr_context(pr_url)  # Makes fresh API calls
     pr = ctx["pr"]
     client = ctx["client"]
 

@@ -693,6 +693,11 @@ def get_full_pr_context(
     """
     Fetch comprehensive PR context including details, threads, and checks.
 
+    IMPORTANT: This function ALWAYS makes fresh API calls to GitHub.
+    There is NO caching - each call retrieves live data from the GitHub API.
+    Always call this function to get the current state; never reuse
+    previously fetched context data.
+
     Args:
         pr_url_or_number: Either a full GitHub PR URL or a PR number (as string)
         token: GitHub token (optional, uses env var if not provided)
