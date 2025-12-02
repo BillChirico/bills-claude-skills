@@ -155,35 +155,6 @@ echo 'export GITHUB_TOKEN="your_personal_access_token"' >> ~/.zshrc
 Use the github-pr-resolver skill to resolve feedback on PR #123
 ```
 
-**Programmatic usage:**
-```python
-from github_pr_resolver.scripts.github_pr_client import get_full_pr_context
-
-# Fetch PR context
-context = get_full_pr_context("https://github.com/owner/repo/pull/123")
-
-print(f"PR #{context['pr'].number}: {context['pr'].title}")
-print(f"Unresolved threads: {len(context['unresolved_threads'])}")
-print(f"Failing checks: {len(context['failing_checks'])}")
-```
-
-## Repository Structure
-
-```
-bills-claude-skills/
-├── README.md                           # This file
-├── CLAUDE.md                           # Instructions for Claude Code
-├── LICENSE                             # MIT License
-├── github-pr-resolver/                 # PR resolution skill
-│   ├── SKILL.md                        # Skill definition & workflow
-│   ├── scripts/
-│   │   └── github_pr_client.py         # GitHub API client
-│   └── references/
-│       └── github_api_reference.md     # API documentation
-└── git-workspace-init/                 # Worktree initialization skill
-    └── SKILL.md                        # Skill definition & workflow
-```
-
 ## Contributing
 
 Contributions are welcome! To add a new skill:
