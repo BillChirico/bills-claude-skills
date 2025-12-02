@@ -16,6 +16,9 @@ export GITHUB_TOKEN="your_token"
 
 # 4. Use it!
 /resolve-pr https://github.com/owner/repo/pull/123
+
+# Or initialize a new workspace
+/init-workspace feat user-auth
 ```
 
 ## What are Claude Skills?
@@ -153,6 +156,35 @@ echo 'export GITHUB_TOKEN="your_personal_access_token"' >> ~/.zshrc
 **Via direct invocation:**
 ```
 Use the github-pr-resolver skill to resolve feedback on PR #123
+```
+
+### Using Git Workspace Init
+
+**Via slash command:**
+```
+/init-workspace <type> <description>
+```
+
+**Examples:**
+```bash
+# Start a new feature
+/init-workspace feat user-authentication
+
+# Fix a bug
+/init-workspace fix login-validation-error
+
+# Create a hotfix
+/init-workspace hotfix security-patch
+
+# Documentation updates
+/init-workspace docs api-reference
+```
+
+**Supported types:** `feat`, `fix`, `hotfix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `style`
+
+**Via direct invocation:**
+```
+Use the git-workspace-init skill to create a workspace for adding user authentication
 ```
 
 ## Contributing
