@@ -10,20 +10,28 @@ This is a collection of custom Claude Code skills. Skills are self-contained mod
 
 ```
 bills-claude-skills/
+├── .claude-plugin/
+│   └── marketplace.json    # Plugin registry configuration
 ├── github-pr-resolver/     # PR review resolution skill
 │   ├── SKILL.md           # Skill definition and workflow
-│   ├── scripts/           # Python utilities
+│   ├── commands/
+│   │   └── resolve-pr.md  # Slash command definition
+│   ├── scripts/
 │   │   └── github_pr_client.py
-│   └── references/        # API documentation
+│   └── references/
 │       └── github_api_reference.md
 ├── git-workspace-init/     # Git worktree initialization skill
-│   └── SKILL.md           # Skill definition and workflow
+│   ├── SKILL.md           # Skill definition and workflow
+│   └── commands/
+│       └── init-workspace.md  # Slash command: /init-workspace <type> <description>
+└── README.md               # Usage documentation
 ```
 
 ## Skills Architecture
 
 Each skill follows this pattern:
 - **SKILL.md**: Frontmatter with `name` and `description`, followed by workflow documentation
+- **commands/**: Slash command definitions (e.g., `/resolve-pr`, `/init-workspace`)
 - **scripts/**: Helper utilities that can be imported and used during skill execution
 - **references/**: Supporting documentation for complex APIs or workflows
 
