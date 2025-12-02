@@ -23,6 +23,11 @@
       "name": "resolve-pr",
       "path": "./github-pr-resolver/commands/resolve-pr.md",
       "description": "GitHub PR URL (e.g., https://github.com/owner/repo/pull/123) or PR number"
+    },
+    {
+      "name": "init-workspace",
+      "path": "./git-workspace-init/commands/init-workspace.md",
+      "description": "Initialize a new git worktree. Usage: /init-workspace <type> <description> (e.g., /init-workspace feat user-auth)"
     }
   ]
 }
