@@ -1,0 +1,26 @@
+{
+  "name": "bills-claude-skills",
+  "version": "1.0.0",
+  "description": "A collection of custom Claude Code skills for Git workflow automation and GitHub PR management",
+  "author": "BillChirico",
+  "repository": "https://github.com/BillChirico/bills-claude-skills",
+  "skills": [
+    {
+      "name": "github-pr-resolver",
+      "path": "github-pr-resolver/SKILL.md",
+      "description": "Automate GitHub pull request review resolution by processing ALL review comments and fixing ALL failing CI checks. Use when: (1) A PR has review comments that need to be addressed and resolved, (2) CI/CD checks are failing and need fixes, (3) You want to process all PR feedback and mark conversations as resolved, (4) You need to iterate on PR feedback quickly. IMPORTANT: This skill processes EVERY comment - no skipping allowed. Always fetches fresh data from GitHub. The only acceptable end state is zero unresolved threads."
+    },
+    {
+      "name": "git-workspace-init",
+      "path": "git-workspace-init/SKILL.md",
+      "description": "Initialize a new git worktree and branch for feature development or bug fixes. Use when: (1) Starting work on a new feature, (2) Beginning a bug fix, (3) Creating an isolated workspace for any task, (4) You want to work in parallel on multiple branches. This skill handles branch naming with conventional branch conventions, worktree creation, and remote push setup."
+    }
+  ],
+  "commands": [
+    {
+      "name": "resolve-pr",
+      "path": "github-pr-resolver/commands/resolve-pr.md",
+      "description": "GitHub PR URL (e.g., https://github.com/owner/repo/pull/123) or PR number"
+    }
+  ]
+}
