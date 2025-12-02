@@ -11,8 +11,8 @@ A collection of custom skills for [Claude Code](https://claude.ai/code) that ext
 # 2. Install a skill
 /plugin install github-pr-resolver@bills-claude-skills
 
-# 3. Set up GitHub token
-export GITHUB_TOKEN="your_token"
+# 3. Authenticate with GitHub CLI
+gh auth login
 
 # 4. Use it!
 /resolve-pr https://github.com/owner/repo/pull/123
@@ -23,10 +23,10 @@ export GITHUB_TOKEN="your_token"
 
 ## What are Claude Skills?
 
-Skills are structured prompts and helper utilities that give Claude Code specialized knowledge for specific tasks. Each skill includes:
+Skills are structured prompts and documentation that give Claude Code specialized knowledge for specific tasks. Each skill includes:
 
 - **Workflow documentation** - Step-by-step instructions Claude follows
-- **Helper scripts** - Utilities Claude can import and execute
+- **Slash commands** - Quick triggers for skill invocation
 - **Reference materials** - API docs and patterns for complex integrations
 
 ## Available Skills
@@ -36,11 +36,11 @@ Skills are structured prompts and helper utilities that give Claude Code special
 Automates pull request review resolution by processing comments, making fixes, and resolving threads.
 
 **Capabilities:**
-- Fetch PR context (review threads, check statuses)
+- Fetch PR context (review threads, check statuses) via GitHub CLI
 - Parse and apply code suggestions from reviewers
 - Fix failing CI checks (lint, tests, build, formatting)
 - Resolve conversation threads via GitHub GraphQL API
-- Commit changes using conventional commit format
+- Commit changes using conventional commit format (one commit per fix)
 
 **Use when:**
 - A PR has review comments that need addressing
@@ -72,8 +72,7 @@ Initialize isolated git worktrees with proper branch naming following [conventio
 ### Prerequisites
 
 - [Claude Code CLI](https://claude.ai/code) installed
-- Python 3.8+ (for helper scripts)
-- GitHub personal access token with `repo` scope
+- [GitHub CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
 
 ### Option 1: Install via Claude Code Plugin System (Recommended)
 
@@ -118,12 +117,7 @@ Or browse all available skills interactively:
    git clone https://github.com/BillChirico/bills-claude-skills.git
    ```
 
-2. Install Python dependencies:
-   ```bash
-   pip install requests
-   ```
-
-3. Copy skills to your Claude Code skills directory:
+2. Copy skills to your Claude Code skills directory:
    ```bash
    # For personal skills (available in all projects)
    cp -r github-pr-resolver ~/.claude/skills/
@@ -134,15 +128,16 @@ Or browse all available skills interactively:
 
 ### Environment Setup
 
-Regardless of installation method, set up your GitHub token:
+Ensure GitHub CLI is authenticated:
 ```bash
-export GITHUB_TOKEN="your_personal_access_token"
+# Check authentication status
+gh auth status
+
+# If not authenticated, run:
+gh auth login
 ```
 
-Add to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) for persistence:
-```bash
-echo 'export GITHUB_TOKEN="your_personal_access_token"' >> ~/.zshrc
-```
+The token requires `repo` scope for full repository access.
 
 ## Usage
 
