@@ -1,8 +1,34 @@
-# Bill's Claude Skills
+<div align="center">
 
-A collection of custom skills for [Claude Code](https://claude.ai/code) that extend Claude's capabilities with specialized workflows and utilities.
+<h1>
+  <img src="https://api.iconify.design/vscode-icons:file-type-claude.svg" alt="Claude" width="60" height="60" style="vertical-align: middle;" />
+  Bill's Claude Skills
+</h1>
 
-## Quick Start
+<p align="center">
+  <b>⚡ Supercharge Claude Code with specialized workflows</b>
+</p>
+
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" />
+  </a>
+  <a href="https://claude.ai/code">
+    <img src="https://img.shields.io/badge/Claude-Code-8B5CF6?logo=anthropic" alt="Claude Code" />
+  </a>
+  <img src="https://img.shields.io/badge/Skills-2-blue?logo=git&logoColor=white" alt="Skills" />
+  <img src="https://img.shields.io/badge/Automation-GitHub_PR-green?logo=github&logoColor=white" alt="PR Automation" />
+</p>
+
+<p align="center">
+  <b>🎯 Automate PR reviews</b> • <b>🌳 Git worktree workflows</b> • <b>🚀 Boost productivity</b>
+</p>
+
+</div>
+
+<br />
+
+## ⚡ Quick Start
 
 ```bash
 # 1. Add the marketplace
@@ -21,60 +47,124 @@ gh auth login
 /init-workspace feat user-auth
 ```
 
-## What are Claude Skills?
+---
 
-Skills are structured prompts and documentation that give Claude Code specialized knowledge for specific tasks. Each skill includes:
+## 🤔 What are Claude Skills?
 
-- **Workflow documentation** - Step-by-step instructions Claude follows
-- **Slash commands** - Quick triggers for skill invocation
-- **Reference materials** - API docs and patterns for complex integrations
+Skills are **structured prompts and documentation** that give Claude Code specialized knowledge for specific tasks. Think of them as expert plugins for your AI coding assistant.
 
-## Available Skills
+<table>
+<tr>
+<td width="33%" align="center">
 
-### GitHub PR Resolver
+📚 **Workflow Docs**
 
-Automates pull request review resolution by processing comments, making fixes, and resolving threads.
+Step-by-step instructions Claude follows
 
-**Capabilities:**
-- Fetch PR context (review threads, check statuses) via GitHub CLI
-- Parse and apply code suggestions from reviewers
-- Fix failing CI checks (lint, tests, build, formatting)
-- Resolve conversation threads via GitHub GraphQL API
-- Commit changes using conventional commit format (one commit per fix)
+</td>
+<td width="33%" align="center">
 
-**Use when:**
-- A PR has review comments that need addressing
-- CI/CD checks are failing
-- You want to quickly iterate on PR feedback
+⚡ **Slash Commands**
 
-[View skill documentation →](github-pr-resolver/SKILL.md)
+Quick triggers for instant invocation
 
-### Git Workspace Init
+</td>
+<td width="33%" align="center">
 
-Initialize isolated git worktrees with proper branch naming following [conventional branch](https://conventional-branch.github.io/) conventions.
+📖 **References**
 
-**Capabilities:**
-- Generate branch names from task type and description
-- Create git worktrees for parallel development
-- Push new branches to remote with tracking
-- Support for all conventional types (feat, fix, hotfix, docs, refactor, etc.)
+API docs & patterns for complex tasks
 
-**Use when:**
-- Starting work on a new feature
-- Beginning a bug fix or hotfix
-- Creating an isolated workspace for any task
-- Working on multiple branches simultaneously
+</td>
+</tr>
+</table>
 
-[View skill documentation →](git-workspace-init/SKILL.md)
+---
 
-## Installation
+## 🛠️ Available Skills
 
-### Prerequisites
+### <img src="https://api.iconify.design/octicon:git-pull-request-16.svg" width="24" height="24" style="vertical-align: middle;" /> GitHub PR Resolver
 
-- [Claude Code CLI](https://claude.ai/code) installed
-- [GitHub CLI](https://cli.github.com/) installed and authenticated (`gh auth login`)
+**Automate PR review resolution** by processing comments, making fixes, and resolving threads.
 
-### Option 1: Install via Claude Code Plugin System (Recommended)
+<details>
+<summary><b>✨ Capabilities</b></summary>
+
+- 🔍 Fetch PR context (review threads, check statuses) via GitHub CLI
+- 💬 Parse and apply code suggestions from reviewers
+- ✅ Fix failing CI checks (lint, tests, build, formatting)
+- 🔄 Resolve conversation threads via GitHub GraphQL API
+- 📝 Commit changes using conventional commit format (one commit per fix)
+
+</details>
+
+<details>
+<summary><b>🎯 Use Cases</b></summary>
+
+- ✓ A PR has review comments that need addressing
+- ✓ CI/CD checks are failing
+- ✓ You want to quickly iterate on PR feedback
+
+</details>
+
+**[📖 View full documentation →](github-pr-resolver/SKILL.md)**
+
+---
+
+### <img src="https://api.iconify.design/octicon:git-branch-16.svg" width="24" height="24" style="vertical-align: middle;" /> Git Workspace Init
+
+**Initialize isolated git worktrees** with proper branch naming following [conventional branch](https://conventional-branch.github.io/) conventions.
+
+<details>
+<summary><b>✨ Capabilities</b></summary>
+
+- 🏷️ Generate branch names from task type and description
+- 🌳 Create git worktrees for parallel development
+- 🚀 Push new branches to remote with tracking
+- 🎨 Support for all conventional types (feat, fix, hotfix, docs, refactor, etc.)
+
+</details>
+
+<details>
+<summary><b>🎯 Use Cases</b></summary>
+
+- ✓ Starting work on a new feature
+- ✓ Beginning a bug fix or hotfix
+- ✓ Creating an isolated workspace for any task
+- ✓ Working on multiple branches simultaneously
+
+</details>
+
+**[📖 View full documentation →](git-workspace-init/SKILL.md)**
+
+---
+
+## 📦 Installation
+
+### 📋 Prerequisites
+
+<table>
+<tr>
+<td width="50%">
+
+**Claude Code CLI**
+```bash
+# Install from claude.ai/code
+```
+
+</td>
+<td width="50%">
+
+**GitHub CLI**
+```bash
+gh auth login
+```
+
+</td>
+</tr>
+</table>
+
+### 🎯 Option 1: Install via Plugin System (Recommended)
 
 The easiest way to install these skills is through Claude Code's plugin system.
 
@@ -139,9 +229,9 @@ gh auth login
 
 The token requires `repo` scope for full repository access.
 
-## Usage
+## 🚀 Usage
 
-### Using the GitHub PR Resolver
+### GitHub PR Resolver
 
 **Via slash command (if configured):**
 ```
@@ -182,20 +272,35 @@ Use the github-pr-resolver skill to resolve feedback on PR #123
 Use the git-workspace-init skill to create a workspace for adding user authentication
 ```
 
-## Contributing
+---
 
-Contributions are welcome! To add a new skill:
+## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/my-new-skill`
-3. Add your skill following the structure above
-4. Test the skill with Claude Code
-5. Submit a pull request
+**Contributions are welcome!** Help make Claude Code even more powerful.
 
-## License
+<details>
+<summary><b>How to contribute a new skill</b></summary>
+
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch: `git checkout -b feat/my-new-skill`
+3. ✍️ Add your skill following the structure above
+4. 🧪 Test the skill with Claude Code
+5. 🚀 Submit a pull request
+
+</details>
+
+---
+
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Author
+---
 
-Bill Chirico
+<div align="center">
+
+**Made with ❤️ by [Bill Chirico](https://github.com/BillChirico)**
+
+*Star ⭐ this repo if you find it helpful!*
+
+</div>
