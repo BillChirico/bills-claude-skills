@@ -1,5 +1,65 @@
 # GitHub PR Review Resolution Reference
 
+## API Access Methods
+
+This skill supports two methods for interacting with GitHub. **Prefer MCP when available.**
+
+### GitHub MCP Server (Preferred)
+
+When available, use GitHub MCP tools (`mcp__github__*`) for all operations:
+
+| Operation | MCP Tool | Parameters |
+|-----------|----------|------------|
+| Read PR details | `mcp__github__pull_request_read` | `owner`, `repo`, `pullNumber` |
+| List PR comments | `mcp__github__pull_request_read` | Included in PR response |
+| Resolve thread | `mcp__github__pull_request_review_write` | `owner`, `repo`, `pullNumber`, `threadId`, `action: "RESOLVE"` |
+| Add review comment | `mcp__github__add_comment_to_pending_review` | `owner`, `repo`, `pullNumber`, `body`, `path`, `line` |
+| Submit review | `mcp__github__pull_request_review_write` | `owner`, `repo`, `pullNumber`, `event`, `body` |
+| Get file contents | `mcp__github__get_file_contents` | `owner`, `repo`, `path`, `ref` |
+
+**Benefits of MCP:**
+- Structured data responses (no JSON parsing needed)
+- Better error messages
+- Automatic pagination handling
+- Type-safe parameters
+
+### GitHub CLI (Fallback)
+
+When MCP is not available, use the `gh` CLI. See sections below for CLI commands.
+
+---
+
+## ⚠️ Pagination Requirements
+
+**PRs almost always have multiple pages of review threads.** GitHub's API returns max 100 items per request.
+
+### Why Pagination Matters
+
+- A PR with 150 comments requires 2 API calls minimum
+- Active PRs with discussions can have 200+ threads
+- **Checking only page 1 will miss most comments**
+
+### Pagination Checklist
+
+Before considering thread fetching complete:
+- [ ] Made initial request (page 1)
+- [ ] Checked `hasNextPage` in response
+- [ ] If `hasNextPage: true`, fetched next page with cursor
+- [ ] Repeated until `hasNextPage: false`
+- [ ] Combined all threads from all pages
+- [ ] Verified total count matches expectations
+
+### MCP Pagination
+
+Even when using MCP tools, check for pagination indicators:
+- `hasNextPage` field
+- `endCursor` or `nextPageToken`
+- `totalCount` vs returned count mismatch
+
+If pagination exists, make additional requests until all data is retrieved.
+
+---
+
 ## Understanding Review Comments
 
 ### Comment Types
@@ -101,7 +161,7 @@ ruff check --fix .
 
 ## Thread Resolution Workflow
 
-### GraphQL Thread Structure
+### Thread Structure
 
 Threads contain:
 - `id`: GraphQL node ID for mutations
@@ -110,7 +170,15 @@ Threads contain:
 - `line`: Line number
 - `comments`: Array of comments in thread
 
-### Fetching Threads (with Pagination)
+### Fetching Threads
+
+**Using MCP (preferred):**
+```
+mcp__github__pull_request_read returns all review threads in the response.
+No manual pagination needed - MCP handles this automatically.
+```
+
+### Fetching Threads with CLI (with Pagination)
 
 The GitHub GraphQL API returns max 100 items per request. Use cursor-based pagination to fetch all threads:
 
@@ -155,6 +223,17 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
 
 ### Resolving a Thread
 
+**Using MCP (preferred):**
+```
+mcp__github__pull_request_review_write with:
+- owner: repository owner
+- repo: repository name
+- pullNumber: PR number
+- threadId: the thread's GraphQL ID
+- action: "RESOLVE"
+```
+
+**Using CLI (fallback):**
 ```bash
 gh api graphql -f query='
 mutation($threadId: ID!) {
@@ -221,7 +300,11 @@ git push origin $BRANCH --force-with-lease
 
 ## GitHub CLI Quick Reference
 
+**Note:** Prefer MCP tools when available. Use CLI as fallback.
+
 ### PR Operations
+
+**MCP equivalent:** `mcp__github__pull_request_read`
 
 ```bash
 # View PR details
@@ -249,6 +332,8 @@ gh run view <RUN_ID> --log-failed
 ```
 
 ### GraphQL Operations
+
+**MCP equivalent:** Most GraphQL operations are covered by MCP tools. Only use raw GraphQL via CLI when MCP doesn't support the specific operation.
 
 ```bash
 # Generic GraphQL query
