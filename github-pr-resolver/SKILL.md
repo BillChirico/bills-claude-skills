@@ -1,18 +1,19 @@
 ---
 name: github-pr-resolver
-description: "Resolve GitHub PR review comments and fix failing CI checks. Creates todo list to track ALL threads across ALL pages, processes each with individual commits, and verifies zero unresolved remain."
+description: "Resolve GitHub PR review comments and fix failing CI checks. Creates todo list to track ALL threads across ALL pages, processes each with individual commits, marks each resolved immediately, and verifies all resolved + CI passing before completion."
 ---
 
 # GitHub PR Resolver
 
-Process **ALL** PR review comments, make fixes, resolve threads, and fix CI failures.
+Process **ALL** PR review comments, make fixes, resolve threads immediately, and ensure CI passes.
 
 ## Critical Rules
 
 1. **Fetch ALL pages** - GitHub returns max 100 items per request. Always paginate until `hasNextPage: false`
 2. **Track with todos** - Create a `TaskCreate` item for each unresolved thread before processing
 3. **One commit per thread** - Never batch fixes into a single commit
-4. **Verify after push** - Re-fetch ALL pages to confirm zero unresolved threads remain
+4. **Resolve immediately** - Mark each thread resolved on GitHub RIGHT AFTER fixing it, not at the end
+5. **CI must pass** - Task is NOT complete until all CI checks are green. Fix failures and retry.
 
 ## API Access
 
@@ -65,24 +66,60 @@ For each unresolved thread (`isResolved: false`), create a tracking item:
 
 ```
 TaskCreate:
-  subject: "<path>:<line> - <summary>"
-  description: "Thread ID: <id>\nAuthor: <author>\nComment: <body>"
-  activeForm: "Resolving <path>:<line>"
+  subject: "<path>:<line> - <summary> (@<author>)"
+  description: |
+    Thread ID: <id>
+    Author: @<author>
+    Link: https://github.com/<owner>/<repo>/pull/<prNumber>#discussion_r<commentId>
+    Comment: <body>
+  activeForm: "Resolving <path>:<line> (@<author>)"
+```
+
+**Building the comment link:**
+- Extract `commentId` from the first comment's `id` field (the numeric portion after the last `/` or the `databaseId`)
+- Format: `https://github.com/<owner>/<repo>/pull/<prNumber>#discussion_r<commentId>`
+
+**GraphQL to get comment IDs:**
+```bash
+gh api graphql -f query='
+query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $prNumber) {
+      reviewThreads(first: 100, after: $cursor) {
+        pageInfo { hasNextPage, endCursor }
+        nodes {
+          id, isResolved, path, line
+          comments(first: 1) {
+            nodes {
+              databaseId
+              body
+              author { login }
+            }
+          }
+        }
+      }
+    }
+  }
+}' -f owner=OWNER -f repo=REPO -F prNumber=NUMBER
 ```
 
 Verify with `TaskList` - count must match total unresolved from Step 1.
 
-### Step 3: Process Each Thread
+### Step 3: Process Each Thread (Resolve Immediately)
 
-For each todo item:
+For each todo item, fix AND resolve before moving to the next:
 
 ```
 1. TaskUpdate(taskId, status: "in_progress")
 2. Read file, make the fix
 3. git add <file> && git commit -m "<type>(<scope>): <description>"
-4. Resolve thread on GitHub (MCP or GraphQL mutation)
-5. TaskUpdate(taskId, status: "completed")
+4. **IMMEDIATELY** resolve thread on GitHub (do NOT wait until the end)
+5. Verify the thread shows isResolved: true
+6. TaskUpdate(taskId, status: "completed")
+7. Move to next thread
 ```
+
+**IMPORTANT:** Each thread must be marked resolved on GitHub immediately after committing the fix. Do not batch resolutions.
 
 **Resolve thread (MCP):**
 ```
@@ -99,37 +136,96 @@ mutation($threadId: ID!) {
 }' -f threadId="<THREAD_ID>"
 ```
 
-### Step 4: Fix CI Failures
-
-For each failing check, fix and commit separately:
-
+**Verify resolution succeeded:**
 ```bash
-# Lint
-npm run lint -- --fix && git add . && git commit -m "fix(lint): resolve linting errors"
-
-# Tests
-# Fix failing tests
-git add . && git commit -m "fix(tests): update failing assertions"
-
-# Build/Types
-# Fix errors
-git add . && git commit -m "fix(build): resolve build errors"
+gh api graphql -f query='
+query($threadId: ID!) {
+  node(id: $threadId) {
+    ... on PullRequestReviewThread { isResolved }
+  }
+}' -f threadId="<THREAD_ID>"
 ```
 
-### Step 5: Push
+### Step 4: Push Changes
 
 ```bash
 git push origin $(gh pr view <PR> --json headRefName -q '.headRefName')
 ```
 
-### Step 6: Verify
+### Step 5: Wait for CI and Fix Failures
 
-Re-fetch ALL pages (same as Step 1) and confirm:
-- Zero unresolved threads across ALL pages
-- `TaskList` shows all items completed
-- CI checks are running
+**This is a loop - repeat until all checks pass:**
 
-**If any threads remain unresolved, go back to Step 3.**
+```
+1. Wait for CI checks to complete (not just "running")
+2. Check status of ALL checks
+3. If ANY check fails:
+   a. Identify the failure (lint, test, build, types, etc.)
+   b. Fix the issue
+   c. Commit with appropriate message
+   d. Push
+   e. Go back to step 1
+4. Only proceed when ALL checks show "success" or "skipped"
+```
+
+**Check CI status:**
+```bash
+# Wait for checks to complete (poll until no "pending" or "in_progress")
+gh pr checks <PR> --watch
+
+# Or check status directly
+gh pr checks <PR> --json name,state,conclusion
+```
+
+**Fix patterns for common CI failures:**
+
+```bash
+# Lint failures
+npm run lint -- --fix && git add . && git commit -m "fix(lint): resolve linting errors"
+
+# Type errors
+# Fix the type issues in code
+git add . && git commit -m "fix(types): resolve TypeScript errors"
+
+# Test failures
+# Fix failing tests or update assertions
+git add . && git commit -m "fix(tests): update failing test assertions"
+
+# Build failures
+# Fix build issues
+git add . && git commit -m "fix(build): resolve build errors"
+```
+
+**After each fix, push and wait again:**
+```bash
+git push origin $(gh pr view <PR> --json headRefName -q '.headRefName')
+# Then loop back: wait for CI, check results
+```
+
+### Step 6: Final Verification
+
+Only proceed here when Step 5 confirms all CI checks pass.
+
+**Verify ALL of the following:**
+
+1. **Zero unresolved threads** - Re-fetch ALL pages (paginate until `hasNextPage: false`):
+   ```bash
+   gh api graphql -f query='...' # Same query as Step 1
+   # Count threads where isResolved: false - must be 0
+   ```
+
+2. **All todos completed** - `TaskList` shows all items with status `completed`
+
+3. **All CI checks passing**:
+   ```bash
+   gh pr checks <PR> --json name,conclusion | jq 'all(.conclusion == "success" or .conclusion == "skipped")'
+   # Must return true
+   ```
+
+**If verification fails:**
+- Unresolved threads remain → Go back to Step 3
+- CI checks failing → Go back to Step 5
+- Todos incomplete → Review what was missed
 
 ## Commit Convention
 
@@ -146,9 +242,16 @@ Re-fetch ALL pages (same as Step 1) and confirm:
 
 ## Completion Checklist
 
+**The task is NOT complete until ALL boxes can be checked:**
+
 - [ ] Fetched ALL pages (paginated until `hasNextPage: false`)
 - [ ] Created todo for each unresolved thread
+- [ ] Each thread was resolved on GitHub **immediately** after fixing (not batched)
 - [ ] All todos show `completed`
 - [ ] Each thread has its own commit
 - [ ] Changes pushed
-- [ ] Re-verified: zero unresolved across ALL pages
+- [ ] **ALL CI checks are passing** (success or skipped, no failures)
+- [ ] Re-verified: zero unresolved threads across ALL pages
+- [ ] Re-verified: CI status shows all green
+
+**DO NOT mark task complete if CI is still running or failing. Wait and fix.**
