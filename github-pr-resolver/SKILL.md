@@ -105,21 +105,27 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
 
 Verify with `TaskList` - count must match total unresolved from Step 1.
 
-### Step 3: Process Each Thread (Resolve Immediately)
+### Step 3: Process Threads in Parallel
 
-For each todo item, fix AND resolve before moving to the next:
+Fix multiple threads concurrently for efficiency, then resolve each immediately after its fix:
 
 ```
-1. TaskUpdate(taskId, status: "in_progress")
-2. Read file, make the fix
-3. git add <file> && git commit -m "<type>(<scope>): <description>"
-4. **IMMEDIATELY** resolve thread on GitHub (do NOT wait until the end)
-5. Verify the thread shows isResolved: true
-6. TaskUpdate(taskId, status: "completed")
-7. Move to next thread
+1. Group threads by file (threads in the same file should be fixed together)
+2. For independent files, process in parallel:
+   a. TaskUpdate(taskId, status: "in_progress") for each thread being worked
+   b. Read file(s), make all fixes
+   c. git add <file> && git commit -m "<type>(<scope>): <description>" (one commit per thread)
+   d. **IMMEDIATELY** resolve each thread on GitHub after its commit
+   e. Verify each thread shows isResolved: true
+   f. TaskUpdate(taskId, status: "completed") for each resolved thread
+3. Continue until all threads are processed
 ```
 
-**IMPORTANT:** Each thread must be marked resolved on GitHub immediately after committing the fix. Do not batch resolutions.
+**Parallelization rules:**
+- Fix threads in different files simultaneously
+- Threads in the same file: fix together, but create separate commits per logical change
+- Resolve each thread immediately after its specific fix is committed
+- Use parallel tool calls for resolving multiple threads at once when possible
 
 **Resolve thread (MCP):**
 ```
