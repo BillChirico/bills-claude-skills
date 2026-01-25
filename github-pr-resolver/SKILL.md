@@ -252,7 +252,7 @@ Only proceed here when Step 5 confirms all CI checks pass.
 
 - [ ] Fetched ALL pages (paginated until `hasNextPage: false`)
 - [ ] Created todo for each unresolved thread
-- [ ] Each thread was resolved on GitHub **immediately** after fixing (not batched)
+- [ ] Each thread was resolved on GitHub **immediately** after fixing
 - [ ] All todos show `completed`
 - [ ] Each thread has its own commit
 - [ ] Changes pushed
