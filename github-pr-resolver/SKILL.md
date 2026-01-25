@@ -114,12 +114,11 @@ For each todo item, fix AND resolve before moving to the next:
 2. Read file, make the fix
 3. git add <file> && git commit -m "<type>(<scope>): <description>"
 4. **IMMEDIATELY** resolve thread on GitHub (do NOT wait until the end)
-5. Verify the thread shows isResolved: true
-6. TaskUpdate(taskId, status: "completed")
-7. Move to next thread
+5. TaskUpdate(taskId, status: "completed")
+6. Move to next thread
 ```
 
-**IMPORTANT:** Each thread must be marked resolved on GitHub immediately after committing the fix. Do not batch resolutions.
+**IMPORTANT:** Each thread must be marked resolved on GitHub immediately after committing the fix. Do not batch resolutions. Verification happens once at the end (Step 6), not after each fix.
 
 **Resolve thread (MCP):**
 ```
@@ -132,16 +131,6 @@ gh api graphql -f query='
 mutation($threadId: ID!) {
   resolveReviewThread(input: {threadId: $threadId}) {
     thread { id, isResolved }
-  }
-}' -f threadId="<THREAD_ID>"
-```
-
-**Verify resolution succeeded:**
-```bash
-gh api graphql -f query='
-query($threadId: ID!) {
-  node(id: $threadId) {
-    ... on PullRequestReviewThread { isResolved }
   }
 }' -f threadId="<THREAD_ID>"
 ```
