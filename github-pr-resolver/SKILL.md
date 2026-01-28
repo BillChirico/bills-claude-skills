@@ -19,11 +19,11 @@ Process **ALL** PR review comments, make fixes, resolve threads immediately, and
 
 **Prefer GitHub MCP when available**, fall back to `gh` CLI.
 
-| Operation | MCP Tool | CLI Fallback |
-|-----------|----------|--------------|
-| Read PR | `mcp__github__pull_request_read` | `gh pr view` |
+| Operation      | MCP Tool                                 | CLI Fallback              |
+| -------------- | ---------------------------------------- | ------------------------- |
+| Read PR        | `mcp__github__pull_request_read`         | `gh pr view`              |
 | Resolve thread | `mcp__github__pull_request_review_write` | `gh api graphql` mutation |
-| Check status | Included in PR read | `gh pr checks` |
+| Check status   | Included in PR read                      | `gh pr checks`            |
 
 ## Workflow
 
@@ -37,12 +37,14 @@ Process **ALL** PR review comments, make fixes, resolve threads immediately, and
 ```
 
 **MCP:**
+
 ```
 mcp__github__pull_request_read(owner, repo, pullNumber)
 → Check response for pagination, fetch additional pages if needed
 ```
 
 **CLI (GraphQL):**
+
 ```bash
 gh api graphql -f query='
 query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
@@ -66,7 +68,7 @@ For each unresolved thread (`isResolved: false`), create a tracking item:
 
 ```
 TaskCreate:
-  subject: "<path>:<line> - <summary> (@<author>)"
+  subject: "[#] <path>:<line> - <summary> (@<author>)"
   description: |
     Thread ID: <id>
     Author: @<author>
@@ -76,10 +78,12 @@ TaskCreate:
 ```
 
 **Building the comment link:**
+
 - Extract `commentId` from the first comment's `id` field (the numeric portion after the last `/` or the `databaseId`)
 - Format: `https://github.com/<owner>/<repo>/pull/<prNumber>#discussion_r<commentId>`
 
 **GraphQL to get comment IDs:**
+
 ```bash
 gh api graphql -f query='
 query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
@@ -122,17 +126,20 @@ Fix multiple threads concurrently for efficiency, then resolve each immediately 
 ```
 
 **Parallelization rules:**
+
 - Fix threads in different files simultaneously
 - Threads in the same file: fix together, but create separate commits per logical change
 - Resolve each thread immediately after its specific fix is committed
 - Use parallel tool calls for resolving multiple threads at once when possible
 
 **Resolve thread (MCP):**
+
 ```
 mcp__github__pull_request_review_write(owner, repo, pullNumber, threadId, action: "RESOLVE")
 ```
 
 **Resolve thread (CLI):**
+
 ```bash
 gh api graphql -f query='
 mutation($threadId: ID!) {
@@ -143,6 +150,7 @@ mutation($threadId: ID!) {
 ```
 
 **Verify resolution succeeded:**
+
 ```bash
 gh api graphql -f query='
 query($threadId: ID!) {
@@ -175,6 +183,7 @@ git push origin $(gh pr view <PR> --json headRefName -q '.headRefName')
 ```
 
 **Check CI status:**
+
 ```bash
 # Wait for checks to complete (poll until no "pending" or "in_progress")
 gh pr checks <PR> --watch
@@ -203,6 +212,7 @@ git add . && git commit -m "fix(build): resolve build errors"
 ```
 
 **After each fix, push and wait again:**
+
 ```bash
 git push origin $(gh pr view <PR> --json headRefName -q '.headRefName')
 # Then loop back: wait for CI, check results
@@ -215,6 +225,7 @@ Only proceed here when Step 5 confirms all CI checks pass.
 **Verify ALL of the following:**
 
 1. **Zero unresolved threads** - Re-fetch ALL pages (paginate until `hasNextPage: false`):
+
    ```bash
    gh api graphql -f query='...' # Same query as Step 1
    # Count threads where isResolved: false - must be 0
@@ -229,20 +240,21 @@ Only proceed here when Step 5 confirms all CI checks pass.
    ```
 
 **If verification fails:**
+
 - Unresolved threads remain → Go back to Step 3
 - CI checks failing → Go back to Step 5
 - Todos incomplete → Review what was missed
 
 ## Commit Convention
 
-| Comment Pattern | Commit Type |
-|----------------|-------------|
-| Bug fix, null check, validation | `fix` |
-| Add, implement, missing | `feat` |
-| Rename, refactor, change X to Y | `refactor` |
-| Documentation, comments | `docs` |
-| Performance | `perf` |
-| Style, formatting | `style` |
+| Comment Pattern                 | Commit Type |
+| ------------------------------- | ----------- |
+| Bug fix, null check, validation | `fix`       |
+| Add, implement, missing         | `feat`      |
+| Rename, refactor, change X to Y | `refactor`  |
+| Documentation, comments         | `docs`      |
+| Performance                     | `perf`      |
+| Style, formatting               | `style`     |
 
 **Scope:** Extract from path - `src/services/User.ts` → `services`
 
