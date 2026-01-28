@@ -14,6 +14,7 @@ Process **ALL** PR review comments, make fixes, resolve threads immediately, and
 3. **One commit per thread** - Never batch fixes into a single commit
 4. **Resolve immediately** - Mark each thread resolved on GitHub RIGHT AFTER fixing it, not at the end
 5. **CI must pass** - Task is NOT complete until all CI checks are green. Fix failures and retry.
+6. **Parallel agents** - Spawn agents for independent files in a SINGLE message to run truly in parallel
 
 ## API Access
 
@@ -109,28 +110,71 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
 
 Verify with `TaskList` - count must match total unresolved from Step 1.
 
-### Step 3: Process Threads in Parallel
+### Step 3: Process Threads in Parallel with Agents
 
-Fix multiple threads concurrently for efficiency, then resolve each immediately after its fix:
+Use Claude Code's Task tool to spawn separate agents that fix threads concurrently:
 
 ```
-1. Group threads by file (threads in the same file should be fixed together)
-2. For independent files, process in parallel:
-   a. TaskUpdate(taskId, status: "in_progress") for each thread being worked
-   b. Read file(s), make all fixes
-   c. git add <file> && git commit -m "<type>(<scope>): <description>" (one commit per thread)
-   d. **IMMEDIATELY** resolve each thread on GitHub after its commit
-   e. Verify each thread shows isResolved: true
-   f. TaskUpdate(taskId, status: "completed") for each resolved thread
-3. Continue until all threads are processed
+1. Group threads by file (threads in the same file go to one agent)
+2. For each file group, spawn an agent using Task tool:
+   - subagent_type: "general-purpose"
+   - run_in_background: true (for parallel execution)
+   - Provide: file path, thread details, todo IDs, PR info
+3. Each agent independently:
+   a. TaskUpdate(taskId, status: "in_progress")
+   b. Read file, make fix
+   c. git add <file> && git commit -m "<type>(<scope>): <description>"
+   d. Resolve thread on GitHub immediately
+   e. Verify isResolved: true
+   f. TaskUpdate(taskId, status: "completed")
+4. Monitor agents with TaskOutput, wait for all to complete
+5. Handle any failures by re-processing those threads
+```
+
+**Agent spawning pattern:**
+
+```
+# Spawn agents for independent files in a SINGLE message with multiple Task calls
+Task(
+  subagent_type: "general-purpose",
+  run_in_background: true,
+  description: "Fix PR thread in <file>",
+  prompt: """
+    Fix PR review thread and resolve it.
+
+    Repository: <owner>/<repo>
+    PR Number: <prNumber>
+    Branch: <branch>
+
+    Thread Details:
+    - Todo ID: <taskId>
+    - Thread ID: <threadId>
+    - File: <path>
+    - Line: <line>
+    - Comment: <body>
+    - Author: @<author>
+
+    Instructions:
+    1. Mark todo as in_progress: TaskUpdate(taskId: "<taskId>", status: "in_progress")
+    2. Read the file and understand the context
+    3. Make the fix requested in the comment
+    4. Commit: git add <path> && git commit -m "<type>(<scope>): <description>"
+    5. Resolve thread on GitHub using gh CLI:
+       gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<threadId>"}) { thread { isResolved } } }'
+    6. Verify resolution succeeded
+    7. Mark todo completed: TaskUpdate(taskId: "<taskId>", status: "completed")
+    8. Report success or failure
+  """
+)
 ```
 
 **Parallelization rules:**
 
-- Fix threads in different files simultaneously
-- Threads in the same file: fix together, but create separate commits per logical change
-- Resolve each thread immediately after its specific fix is committed
-- Use parallel tool calls for resolving multiple threads at once when possible
+- **Spawn all independent file agents in ONE message** - This runs them truly in parallel
+- Threads in the same file: send to a single agent to avoid conflicts
+- Each agent commits and resolves independently
+- Use `run_in_background: true` for parallel execution
+- Monitor with `TaskOutput(task_id, block: false)` to check progress
 
 **Resolve thread (MCP):**
 
@@ -160,10 +204,29 @@ query($threadId: ID!) {
 }' -f threadId="<THREAD_ID>"
 ```
 
-### Step 4: Push Changes
+### Step 4: Monitor Agents and Push Changes
+
+**Wait for all agents to complete:**
+
+```
+1. Collect all agent task_ids from Step 3
+2. Poll each with TaskOutput(task_id, block: false) or wait with block: true
+3. Check TaskList - all todos should be "completed"
+4. If any agent failed, re-spawn for those threads
+```
+
+**Push all commits:**
 
 ```bash
 git push origin $(gh pr view <PR> --json headRefName -q '.headRefName')
+```
+
+**Handle conflicts (rare with file-based grouping):**
+
+```bash
+# If push fails due to conflicts from parallel commits
+git pull --rebase origin <branch>
+git push origin <branch>
 ```
 
 ### Step 5: Wait for CI and Fix Failures
@@ -264,6 +327,8 @@ Only proceed here when Step 5 confirms all CI checks pass.
 
 - [ ] Fetched ALL pages (paginated until `hasNextPage: false`)
 - [ ] Created todo for each unresolved thread
+- [ ] Spawned agents for independent files in parallel (single message, multiple Task calls)
+- [ ] All agents completed successfully (monitored via TaskOutput)
 - [ ] Each thread was resolved on GitHub **immediately** after fixing
 - [ ] All todos show `completed`
 - [ ] Each thread has its own commit
