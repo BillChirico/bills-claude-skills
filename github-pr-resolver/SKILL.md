@@ -14,7 +14,7 @@ Process **ALL** PR review comments, make fixes, resolve threads immediately, and
 3. **One commit per thread** - Never batch fixes into a single commit
 4. **Resolve immediately** - Mark each thread resolved on GitHub RIGHT AFTER fixing it, not at the end
 5. **CI must pass** - Task is NOT complete until all CI checks are green. Fix failures and retry.
-6. **Parallel agents** - Spawn agents for independent files in a SINGLE message to run truly in parallel
+6. **PARALLEL AGENTS (MANDATORY)** - You MUST spawn all agents in ONE message with MULTIPLE Task tool calls. Sequential messages = sequential execution (WRONG). Single message with multiple Tasks = parallel execution (CORRECT).
 
 ## API Access
 
@@ -112,69 +112,101 @@ Verify with `TaskList` - count must match total unresolved from Step 1.
 
 ### Step 3: Process Threads in Parallel with Agents
 
-Use Claude Code's Task tool to spawn separate agents that fix threads concurrently:
+> **CRITICAL: TRUE PARALLEL EXECUTION IS MANDATORY**
+>
+> You MUST spawn ALL agents in a **SINGLE message** with **MULTIPLE Task tool invocations**.
+> If you call Task tools sequentially in separate messages, they run one-at-a-time (WRONG).
+> Only by including multiple Task calls in ONE response do they execute concurrently (CORRECT).
+
+**Workflow:**
 
 ```
 1. Group threads by file (threads in the same file go to one agent)
-2. For each file group, spawn an agent using Task tool:
-   - subagent_type: "general-purpose"
-   - run_in_background: true (for parallel execution)
-   - Provide: file path, thread details, todo IDs, PR info
-3. Each agent independently:
+2. Build ALL Task invocations for all file groups
+3. SEND ALL TASK INVOCATIONS IN A SINGLE MESSAGE ← MANDATORY for parallelism
+4. Each agent independently:
    a. TaskUpdate(taskId, status: "in_progress")
    b. Read file, make fix
-   c. git add <file> && git commit -m "<type>(<scope>): <description>"
+   c. git add [file] && git commit -m "[type]([scope]): [description]"
    d. Resolve thread on GitHub immediately
    e. Verify isResolved: true
    f. TaskUpdate(taskId, status: "completed")
-4. Monitor agents with TaskOutput, wait for all to complete
-5. Handle any failures by re-processing those threads
+5. Monitor agents with TaskOutput, wait for all to complete
+6. Handle any failures by re-processing those threads
 ```
 
-**Agent spawning pattern:**
+**MANDATORY: Multiple Task Invocations in Single Message**
+
+When you have 3 files to fix, you MUST send ONE message containing THREE Task tool invocations:
 
 ```
-# Spawn agents for independent files in a SINGLE message with multiple Task calls
-Task(
-  subagent_type: "general-purpose",
-  run_in_background: true,
-  description: "Fix PR thread in <file>",
-  prompt: """
-    Fix PR review thread and resolve it.
+YOUR SINGLE RESPONSE MUST CONTAIN:
+┌──────────────────────────────────────────────────────────────┐
+│  Task #1: subagent_type="general-purpose"                    │
+│           run_in_background=true                             │
+│           description="Fix PR thread in src/utils.ts"        │
+│           prompt="[agent instructions for file 1]"           │
+├──────────────────────────────────────────────────────────────┤
+│  Task #2: subagent_type="general-purpose"                    │
+│           run_in_background=true                             │
+│           description="Fix PR thread in src/api.ts"          │
+│           prompt="[agent instructions for file 2]"           │
+├──────────────────────────────────────────────────────────────┤
+│  Task #3: subagent_type="general-purpose"                    │
+│           run_in_background=true                             │
+│           description="Fix PR thread in src/models.ts"       │
+│           prompt="[agent instructions for file 3]"           │
+└──────────────────────────────────────────────────────────────┘
+```
 
-    Repository: <owner>/<repo>
-    PR Number: <prNumber>
-    Branch: <branch>
+**Agent prompt template:**
 
-    Thread Details:
-    - Todo ID: <taskId>
-    - Thread ID: <threadId>
-    - File: <path>
-    - Line: <line>
-    - Comment: <body>
-    - Author: @<author>
+```
+Fix PR review thread and resolve it.
 
-    Instructions:
-    1. Mark todo as in_progress: TaskUpdate(taskId: "<taskId>", status: "in_progress")
-    2. Read the file and understand the context
-    3. Make the fix requested in the comment
-    4. Commit: git add <path> && git commit -m "<type>(<scope>): <description>"
-    5. Resolve thread on GitHub using gh CLI:
-       gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<threadId>"}) { thread { isResolved } } }'
-    6. Verify resolution succeeded
-    7. Mark todo completed: TaskUpdate(taskId: "<taskId>", status: "completed")
-    8. Report success or failure
-  """
-)
+Repository: [owner]/[repo]
+PR Number: [prNumber]
+Branch: [branch]
+
+Thread Details:
+- Todo ID: [taskId]
+- Thread ID: [threadId]
+- File: [path]
+- Line: [line]
+- Comment: [body]
+- Author: @[author]
+
+Instructions:
+1. Mark todo as in_progress: TaskUpdate(taskId: "[taskId]", status: "in_progress")
+2. Read the file and understand the context
+3. Make the fix requested in the comment
+4. Commit: git add [path] && git commit -m "[type]([scope]): [description]"
+5. Resolve thread on GitHub using gh CLI:
+   gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "[threadId]"}) { thread { isResolved } } }'
+6. Verify resolution succeeded
+7. Mark todo completed: TaskUpdate(taskId: "[taskId]", status: "completed")
+8. Report success or failure
 ```
 
 **Parallelization rules:**
 
-- **Spawn all independent file agents in ONE message** - This runs them truly in parallel
+- **ALL independent file agents MUST be spawned in ONE message** - This is the ONLY way to run them in parallel
 - Threads in the same file: send to a single agent to avoid conflicts
 - Each agent commits and resolves independently
 - Use `run_in_background: true` for parallel execution
 - Monitor with `TaskOutput(task_id, block: false)` to check progress
+
+**WRONG (sequential - do NOT do this):**
+```
+Message 1: Task for file A
+Message 2: Task for file B  ← waits for A to finish first
+Message 3: Task for file C  ← waits for B to finish first
+```
+
+**CORRECT (parallel - do THIS):**
+```
+Message 1: Task for file A + Task for file B + Task for file C  ← all run concurrently
+```
 
 **Resolve thread (MCP):**
 
