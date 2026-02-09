@@ -1,6 +1,6 @@
 ---
 name: github-pr-resolver
-description: "Resolve GitHub PR review comments and fix failing CI checks. Creates todo list to track ALL threads across ALL pages, processes each with individual commits, marks each resolved immediately, and verifies all resolved + CI passing before completion."
+description: "Resolve GitHub PR review comments and fix failing CI checks. Creates a team with teammates to process threads in parallel, tracks ALL threads across ALL pages, processes each with individual commits, marks each resolved immediately, and verifies all resolved + CI passing before completion."
 ---
 
 # GitHub PR Resolver
@@ -14,7 +14,7 @@ Process **ALL** PR review comments, make fixes, resolve threads immediately, and
 3. **One commit per thread** - Never batch fixes into a single commit
 4. **Resolve immediately** - Mark each thread resolved on GitHub RIGHT AFTER fixing it, not at the end
 5. **CI must pass** - Task is NOT complete until all CI checks are green. Fix failures and retry.
-6. **PARALLEL AGENTS (MANDATORY)** - You MUST spawn all agents in ONE message with MULTIPLE Task tool calls. Sequential messages = sequential execution (WRONG). Single message with multiple Tasks = parallel execution (CORRECT).
+6. **USE TEAMMATES (MANDATORY)** - You MUST create a team with `TeamCreate`, spawn teammates with the `Task` tool using `team_name`, and coordinate via the shared task list. Teammates work in parallel automatically. Do NOT use `run_in_background` agents.
 
 ## API Access
 
@@ -41,7 +41,7 @@ Process **ALL** PR review comments, make fixes, resolve threads immediately, and
 
 ```
 mcp__github__pull_request_read(owner, repo, pullNumber)
-→ Check response for pagination, fetch additional pages if needed
+-> Check response for pagination, fetch additional pages if needed
 ```
 
 **CLI (GraphQL):**
@@ -63,9 +63,17 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
 }' -f owner=OWNER -f repo=REPO -F prNumber=NUMBER
 ```
 
-### Step 2: Create Todo List
+### Step 2: Create Team and Task List
 
-For each unresolved thread (`isResolved: false`), create a tracking item:
+**First, create a team:**
+
+```
+TeamCreate:
+  team_name: "pr-resolver-<prNumber>"
+  description: "Resolve PR #<prNumber> review threads"
+```
+
+**Then, for each unresolved thread (`isResolved: false`), create a task in the team's task list:**
 
 ```
 TaskCreate:
@@ -75,6 +83,11 @@ TaskCreate:
     Author: @<author>
     Link: https://github.com/<owner>/<repo>/pull/<prNumber>#discussion_r<commentId>
     Comment: <body>
+    Repository: <owner>/<repo>
+    PR Number: <prNumber>
+    Branch: <branch>
+    File: <path>
+    Line: <line>
   activeForm: "Resolving <path>:<line> (@<author>)"
 ```
 
@@ -110,102 +123,120 @@ query($owner: String!, $repo: String!, $prNumber: Int!, $cursor: String) {
 
 Verify with `TaskList` - count must match total unresolved from Step 1.
 
-### Step 3: Process Threads in Parallel with Agents
+### Step 3: Spawn Teammates to Process Threads in Parallel
 
-> **CRITICAL: TRUE PARALLEL EXECUTION IS MANDATORY**
+> **CRITICAL: USE TEAMMATES FOR PARALLEL PROCESSING**
 >
-> You MUST spawn ALL agents in a **SINGLE message** with **MULTIPLE Task tool invocations**.
-> If you call Task tools sequentially in separate messages, they run one-at-a-time (WRONG).
-> Only by including multiple Task calls in ONE response do they execute concurrently (CORRECT).
+> You MUST spawn teammates using the `Task` tool with the `team_name` parameter.
+> Teammates automatically work in parallel, pick up tasks from the shared task list,
+> and send you messages when they complete or need help.
 
 **Workflow:**
 
 ```
-1. Group threads by file (threads in the same file go to one agent)
-2. Build ALL Task invocations for all file groups
-3. SEND ALL TASK INVOCATIONS IN A SINGLE MESSAGE ← MANDATORY for parallelism
-4. Each agent independently:
-   a. TaskUpdate(taskId, status: "in_progress")
-   b. Read file, make fix
-   c. git add [file] && git commit -m "[type]([scope]): [description]"
-   d. Resolve thread on GitHub immediately
-   e. Verify isResolved: true
-   f. TaskUpdate(taskId, status: "completed")
-5. Monitor agents with TaskOutput, wait for all to complete
-6. Handle any failures by re-processing those threads
+1. Group threads by file (threads in the same file go to one teammate)
+2. Spawn one teammate per file group using Task tool with team_name
+3. Each teammate independently:
+   a. Claims and starts task: TaskUpdate(taskId, owner: "<teammate-name>", status: "in_progress")
+   b. Reads file, makes fix
+   d. git add [file] && git commit -m "[type]([scope]): [description]"
+   e. Resolves thread on GitHub immediately
+   f. Verifies isResolved: true
+   g. Marks completed: TaskUpdate(taskId, status: "completed")
+   h. Checks TaskList for more unassigned tasks
+   i. Sends message to team lead when all assigned tasks are done
+4. Receive automatic messages from teammates as they complete
+5. Handle any failures by messaging the teammate or spawning a new one
 ```
 
-**MANDATORY: Multiple Task Invocations in Single Message**
+**Spawning teammates (ALL in a SINGLE message for parallel execution):**
 
-When you have 3 files to fix, you MUST send ONE message containing THREE Task tool invocations:
+When you have 3 files to fix, spawn THREE teammates in ONE message:
 
 ```
 YOUR SINGLE RESPONSE MUST CONTAIN:
-┌──────────────────────────────────────────────────────────────┐
-│  Task #1: subagent_type="general-purpose"                    │
-│           run_in_background=true                             │
-│           description="Fix PR thread in src/utils.ts"        │
-│           prompt="[agent instructions for file 1]"           │
-├──────────────────────────────────────────────────────────────┤
-│  Task #2: subagent_type="general-purpose"                    │
-│           run_in_background=true                             │
-│           description="Fix PR thread in src/api.ts"          │
-│           prompt="[agent instructions for file 2]"           │
-├──────────────────────────────────────────────────────────────┤
-│  Task #3: subagent_type="general-purpose"                    │
-│           run_in_background=true                             │
-│           description="Fix PR thread in src/models.ts"       │
-│           prompt="[agent instructions for file 3]"           │
-└──────────────────────────────────────────────────────────────┘
++--------------------------------------------------------------+
+|  Task #1: subagent_type="general-purpose"                    |
+|           team_name="pr-resolver-<prNumber>"                 |
+|           name="resolver-utils"                              |
+|           description="Fix PR threads in src/utils.ts"       |
+|           prompt="[teammate instructions for file 1]"        |
++--------------------------------------------------------------+
+|  Task #2: subagent_type="general-purpose"                    |
+|           team_name="pr-resolver-<prNumber>"                 |
+|           name="resolver-api"                                |
+|           description="Fix PR threads in src/api.ts"         |
+|           prompt="[teammate instructions for file 2]"        |
++--------------------------------------------------------------+
+|  Task #3: subagent_type="general-purpose"                    |
+|           team_name="pr-resolver-<prNumber>"                 |
+|           name="resolver-models"                             |
+|           description="Fix PR threads in src/models.ts"      |
+|           prompt="[teammate instructions for file 3]"        |
++--------------------------------------------------------------+
 ```
 
-**Agent prompt template:**
+**Teammate prompt template:**
+
+> **IMPORTANT:** Before spawning teammates, read the team config file at
+> `~/.claude/teams/pr-resolver-<prNumber>/config.json` to get your own leader name.
+> Inject that name into the prompt template below as `[leaderName]`.
 
 ```
-Fix PR review thread and resolve it.
+You are a teammate on the "pr-resolver-<prNumber>" team.
+Your job is to fix PR review threads and resolve them.
 
 Repository: [owner]/[repo]
 PR Number: [prNumber]
 Branch: [branch]
+Team Lead: [leaderName]
 
-Thread Details:
-- Todo ID: [taskId]
+Your assigned threads (all in the same file):
+
+Thread 1:
+- Task ID: [taskId]
 - Thread ID: [threadId]
 - File: [path]
 - Line: [line]
 - Comment: [body]
 - Author: @[author]
 
-Instructions:
-1. Mark todo as in_progress: TaskUpdate(taskId: "[taskId]", status: "in_progress")
+[...repeat for each thread in this file...]
+
+Instructions for EACH thread:
+1. Claim task: TaskUpdate(taskId: "[taskId]", owner: "<your-name>", status: "in_progress")
 2. Read the file and understand the context
 3. Make the fix requested in the comment
 4. Commit: git add [path] && git commit -m "[type]([scope]): [description]"
 5. Resolve thread on GitHub using gh CLI:
    gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "[threadId]"}) { thread { isResolved } } }'
 6. Verify resolution succeeded
-7. Mark todo completed: TaskUpdate(taskId: "[taskId]", status: "completed")
-8. Report success or failure
+7. Mark completed: TaskUpdate(taskId: "[taskId]", status: "completed")
+
+After all threads are done:
+8. Check TaskList for any remaining unassigned tasks you can pick up
+9. Send a message to the team lead reporting completion:
+   SendMessage(type: "message", recipient: "[leaderName]", content: "All threads resolved for [path]", summary: "Completed [path] threads")
 ```
 
 **Parallelization rules:**
 
-- **ALL independent file agents MUST be spawned in ONE message** - This is the ONLY way to run them in parallel
-- Threads in the same file: send to a single agent to avoid conflicts
-- Each agent commits and resolves independently
-- Use `run_in_background: true` for parallel execution
-- Monitor with `TaskOutput(task_id, block: false)` to check progress
+- **ALL teammate spawns MUST be in ONE message** - This is the ONLY way to start them concurrently
+- Threads in the same file: send to a single teammate to avoid conflicts
+- Each teammate commits and resolves independently
+- Teammates go idle between turns - this is normal, they are waiting for input
+- Messages from teammates are delivered to you automatically
 
 **WRONG (sequential - do NOT do this):**
 ```
-Message 1: Task for file A
-Message 2: Task for file B  ← waits for A to finish first
-Message 3: Task for file C  ← waits for B to finish first
+Message 1: Task(team_name=...) for file A
+Message 2: Task(team_name=...) for file B  <- waits for A to finish first
+Message 3: Task(team_name=...) for file C  <- waits for B to finish first
 ```
 
 **CORRECT (parallel - do THIS):**
 ```
-Message 1: Task for file A + Task for file B + Task for file C  ← all run concurrently
+Message 1: Task for file A + Task for file B + Task for file C  <- all start concurrently
 ```
 
 **Resolve thread (MCP):**
@@ -236,15 +267,15 @@ query($threadId: ID!) {
 }' -f threadId="<THREAD_ID>"
 ```
 
-### Step 4: Monitor Agents and Push Changes
+### Step 4: Monitor Teammates and Push Changes
 
-**Wait for all agents to complete:**
+**Teammates send messages automatically when they finish:**
 
 ```
-1. Collect all agent task_ids from Step 3
-2. Poll each with TaskOutput(task_id, block: false) or wait with block: true
-3. Check TaskList - all todos should be "completed"
-4. If any agent failed, re-spawn for those threads
+1. Wait for messages from all teammates (delivered automatically)
+2. Check TaskList - all todos should be "completed"
+3. If a teammate reports failure, message them with guidance or spawn a replacement
+4. When all tasks are complete, push all commits
 ```
 
 **Push all commits:**
@@ -313,9 +344,23 @@ git push origin $(gh pr view <PR> --json headRefName -q '.headRefName')
 # Then loop back: wait for CI, check results
 ```
 
-### Step 6: Final Verification
+### Step 6: Shutdown Team and Final Verification
 
 Only proceed here when Step 5 confirms all CI checks pass.
+
+**Shutdown all teammates:**
+
+```
+For each teammate:
+  SendMessage(type: "shutdown_request", recipient: "<teammate-name>", content: "All work complete, shutting down")
+Wait for all teammates to confirm shutdown.
+```
+
+**Clean up the team:**
+
+```
+TeamDelete  (removes team and task directories)
+```
 
 **Verify ALL of the following:**
 
@@ -336,9 +381,9 @@ Only proceed here when Step 5 confirms all CI checks pass.
 
 **If verification fails:**
 
-- Unresolved threads remain → Go back to Step 3
-- CI checks failing → Go back to Step 5
-- Todos incomplete → Review what was missed
+- Unresolved threads remain -> Go back to Step 3
+- CI checks failing -> Go back to Step 5
+- Todos incomplete -> Review what was missed
 
 ## Commit Convention
 
@@ -351,16 +396,17 @@ Only proceed here when Step 5 confirms all CI checks pass.
 | Performance                     | `perf`      |
 | Style, formatting               | `style`     |
 
-**Scope:** Extract from path - `src/services/User.ts` → `services`
+**Scope:** Extract from path - `src/services/User.ts` -> `services`
 
 ## Completion Checklist
 
 **The task is NOT complete until ALL boxes can be checked:**
 
 - [ ] Fetched ALL pages (paginated until `hasNextPage: false`)
-- [ ] Created todo for each unresolved thread
-- [ ] Spawned agents for independent files in parallel (single message, multiple Task calls)
-- [ ] All agents completed successfully (monitored via TaskOutput)
+- [ ] Created team with `TeamCreate`
+- [ ] Created task for each unresolved thread
+- [ ] Spawned teammates for independent files in parallel (single message, multiple Task calls with `team_name`)
+- [ ] All teammates completed successfully (confirmed via messages and TaskList)
 - [ ] Each thread was resolved on GitHub **immediately** after fixing
 - [ ] All todos show `completed`
 - [ ] Each thread has its own commit
@@ -368,5 +414,7 @@ Only proceed here when Step 5 confirms all CI checks pass.
 - [ ] **ALL CI checks are passing** (success or skipped, no failures)
 - [ ] Re-verified: zero unresolved threads across ALL pages
 - [ ] Re-verified: CI status shows all green
+- [ ] Teammates shut down with `SendMessage` shutdown_request
+- [ ] Team cleaned up with `TeamDelete`
 
 **DO NOT mark task complete if CI is still running or failing. Wait and fix.**
