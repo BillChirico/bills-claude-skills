@@ -72,7 +72,6 @@ Examples:
 - "Your brain has mass debated enough for one day."
 - "For when 'I don't care, you pick' isn't working."
 - "Finally, an app that makes decisions so you don't have to spiral."
-- "
 
 ### Sobers 🌱
 
@@ -117,10 +116,7 @@ Examples:
 - [`assets/logo.png`](assets/logo.png) — Square logo (default)
 - [`assets/circle.png`](assets/circle.png) — Circle logo (avatars, rounded contexts)
 - [`assets/dark-logo.png`](assets/dark-logo.png) — Square dark logo
-- [`assets/green-logo.png`](assets/green/green-logo.png) — Green logo
-- [`assets/green-white-logo.png`](assets/green/green-white-logo.png) — White on green logo
 
 **Marketing:**
 
 - [`assets/banner.jpg`](assets/banner.jpg) — Marketing banner
-- [`assets/green/banner-green.png`](assets/green/banner-green.png) — Green banner
