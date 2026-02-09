@@ -32,9 +32,9 @@ Always wrap the final copy-paste-ready message in a fenced code block with the `
 ### Rules
 
 1. **Always use a fenced code block** — Triple backticks with `markdown` language identifier
-2. **One clean block per message** — The code block should contain ONLY the Discord-ready content, no commentary or explanations inside it
+2. **The ENTIRE message goes in ONE block** — Everything the user will paste into Discord lives inside a single fenced code block. No part of the Discord message should ever appear outside the block as rendered markdown
 3. **Explain outside the block** — Put any notes, options, or context _before_ or _after_ the code block, never inside it
-4. **Handle nested code blocks** — If the Discord message itself contains code blocks, use four backticks (``````) as the outer fence so the inner triple backticks are preserved:
+4. **Handle nested code blocks** — If the Discord message itself contains code blocks, use four backticks (``````) as the outer fence so the inner triple backticks are preserved. The user copies everything between the outer fence — the inner triple backticks are part of the Discord message:
 
 `````
 ````markdown
@@ -51,6 +51,7 @@ Pretty cool right?
 5. **Multiple messages = multiple blocks** — If providing alternatives or a multi-message sequence, use a separate code block for each with a label above it
 6. **Message metadata summary** — Always display a metadata summary table immediately after every Discord message code block (see below)
 7. **Templates too** — When presenting templates from the reference files, they should also be in copyable code blocks following these same rules
+8. **Never partially render** — Do NOT put headers, bold text, code snippets, or any other Discord-formatted content outside the code block. If it's part of the Discord message, it goes inside the block. The user should never have to assemble a message from rendered markdown and code blocks
 
 ### Message Metadata Summary
 
@@ -89,41 +90,63 @@ Format the summary as a compact table directly below the code block:
 
 ### Example Interaction
 
-**User:** "Write me an announcement for my Discord server about a new app launch"
+**User:** "Write me a Discord announcement about a new SDK release that includes code examples"
 
 **Claude's response should look like:**
 
-Here's your launch announcement:
+Here's your SDK announcement:
 
-```markdown
-# 🎊 App Name is Live!
+````markdown
+# 🚀 Volvox SDK v2.0 — Breaking Changes
 
-After months of building, **App Name** is officially available on iOS and Android.
+Hey @everyone — we just shipped **v2.0** of the SDK and there are a few things you need to know before upgrading.
 
-### Key Features
+## What Changed
 
-- **Feature 1** — description
-- **Feature 2** — description
+The `createJar` method now accepts an options object instead of positional arguments:
 
-### Get It Now
+**Before:**
 
-- 📱 iOS: https://apps.apple.com/app/example
-- 🤖 Android: https://play.google.com/store/apps/details?id=example
-
-> 🐛 Found a bug? Report it in <#CHANNEL_ID>
-
--# Built by <@USER_ID> • v1.0.0
+```ts
+const jar = createJar("Lunch Spots", ["Chipotle", "Sweetgreen"], true);
 ```
 
-| Stat             | Value       |
-| ---------------- | ----------- |
-| Characters       | 374 / 2,000 |
-| Sections         | 3           |
-| User Mentions    | 1           |
-| Role Mentions    | 0           |
-| Channel Mentions | 1           |
-| URLs             | 2           |
-| Code Blocks      | —           |
+**After:**
+
+```ts
+const jar = createJar({
+  name: "Lunch Spots",
+  options: ["Chipotle", "Sweetgreen"],
+  allowDuplicates: true,
+});
+```
+
+## New: Shake Events
+
+```ts
+jar.on("shake", (result) => {
+  console.log(`🎉 Selected: ${result.option}`);
+});
+```
+
+> 💡 Full migration guide pinned in <#dev-resources>
+
+Drop questions in <#sdk-support> — <@core-team> is standing by. 🫡
+
+-# v2.0.0 • <t:1770537600:D>
+````
+
+| Stat             | Value                |
+| ---------------- | -------------------- |
+| Characters       | 659 / 2,000          |
+| Sections         | 3                    |
+| User Mentions    | 1                    |
+| Role Mentions    | 1 (@everyone)        |
+| Channel Mentions | 2                    |
+| URLs             | 0                    |
+| Code Blocks      | 3 — `ts`, `ts`, `ts` |
+
+**Key:** Notice the outer fence uses four backticks (``````) because the Discord message contains inner triple-backtick code blocks. The user copies everything between the outer fence — inner backticks are part of the message.
 
 ---
 

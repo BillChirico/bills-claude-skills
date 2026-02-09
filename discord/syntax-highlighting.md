@@ -13,92 +13,100 @@ your code here
 ## Supported Languages
 
 ### Web & Frontend
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| JavaScript | `javascript`, `js` | |
-| TypeScript | `typescript`, `ts` | |
-| HTML | `html`, `xml` | Shared parser |
-| CSS | `css` | |
-| JSON | `json` | |
-| Markdown | `markdown`, `md` | |
+
+| Language   | Identifiers        | Notes         |
+| ---------- | ------------------ | ------------- |
+| JavaScript | `javascript`, `js` |               |
+| TypeScript | `typescript`, `ts` |               |
+| HTML       | `html`, `xml`      | Shared parser |
+| CSS        | `css`              |               |
+| JSON       | `json`             |               |
+| Markdown   | `markdown`, `md`   |               |
 
 ### Backend & General Purpose
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| Python | `python`, `py` | |
-| C# | `csharp`, `cs` | |
-| C++ | `cpp`, `c++`, `cc` | |
-| C | `c` | |
-| Java | `java` | |
-| Go | `go`, `golang` | |
-| Rust | `rust`, `rs` | |
-| Ruby | `ruby`, `rb` | |
-| PHP | `php` | |
-| Swift | `swift` | |
-| Kotlin | `kotlin`, `kt` | |
-| Scala | `scala` | |
-| R | `r` | |
-| Perl | `perl`, `pl` | |
-| Lua | `lua` | |
-| Haskell | `haskell`, `hs` | |
-| Elixir | `elixir` | |
-| Erlang | `erlang` | |
-| Clojure | `clojure`, `clj` | |
-| OCaml | `ocaml`, `ml` | |
-| F# | `fsharp`, `fs` | |
+
+| Language | Identifiers        | Notes |
+| -------- | ------------------ | ----- |
+| Python   | `python`, `py`     |       |
+| C#       | `csharp`, `cs`     |       |
+| C++      | `cpp`, `c++`, `cc` |       |
+| C        | `c`                |       |
+| Java     | `java`             |       |
+| Go       | `go`, `golang`     |       |
+| Rust     | `rust`, `rs`       |       |
+| Ruby     | `ruby`, `rb`       |       |
+| PHP      | `php`              |       |
+| Swift    | `swift`            |       |
+| Kotlin   | `kotlin`, `kt`     |       |
+| Scala    | `scala`            |       |
+| R        | `r`                |       |
+| Perl     | `perl`, `pl`       |       |
+| Lua      | `lua`              |       |
+| Haskell  | `haskell`, `hs`    |       |
+| Elixir   | `elixir`           |       |
+| Erlang   | `erlang`           |       |
+| Clojure  | `clojure`, `clj`   |       |
+| OCaml    | `ocaml`, `ml`      |       |
+| F#       | `fsharp`, `fs`     |       |
 
 ### Shell & Scripting
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| Bash | `bash`, `sh`, `shell`, `zsh` | |
-| PowerShell | `powershell`, `ps`, `ps1` | |
-| Batch | `batch`, `bat`, `cmd` | |
-| CoffeeScript | `coffeescript`, `coffee` | |
-| AutoHotkey | `autohotkey`, `ahk` | |
+
+| Language     | Identifiers                  | Notes |
+| ------------ | ---------------------------- | ----- |
+| Bash         | `bash`, `sh`, `shell`, `zsh` |       |
+| PowerShell   | `powershell`, `ps`, `ps1`    |       |
+| Batch        | `batch`, `bat`, `cmd`        |       |
+| CoffeeScript | `coffeescript`, `coffee`     |       |
+| AutoHotkey   | `autohotkey`, `ahk`          |       |
 
 ### Data & Config
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| YAML | `yaml`, `yml` | |
-| TOML | `toml` | |
-| INI | `ini` | |
-| XML | `xml` | |
-| SQL | `sql` | |
-| GraphQL | `graphql`, `gql` | |
-| Protobuf | `protobuf`, `proto` | |
+
+| Language | Identifiers         | Notes |
+| -------- | ------------------- | ----- |
+| YAML     | `yaml`, `yml`       |       |
+| TOML     | `toml`              |       |
+| INI      | `ini`               |       |
+| XML      | `xml`               |       |
+| SQL      | `sql`               |       |
+| GraphQL  | `graphql`, `gql`    |       |
+| Protobuf | `protobuf`, `proto` |       |
 
 ### DevOps & Infrastructure
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| Dockerfile | `dockerfile`, `docker` | |
-| Nginx | `nginx` | |
-| Apache | `apache`, `apacheconf` | |
-| Terraform | `terraform`, `tf`, `hcl` | |
+
+| Language   | Identifiers              | Notes |
+| ---------- | ------------------------ | ----- |
+| Dockerfile | `dockerfile`, `docker`   |       |
+| Nginx      | `nginx`                  |       |
+| Apache     | `apache`, `apacheconf`   |       |
+| Terraform  | `terraform`, `tf`, `hcl` |       |
 
 ### Markup & Documentation
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| LaTeX | `latex`, `tex` | |
-| AsciiDoc | `asciidoc`, `adoc` | |
+
+| Language | Identifiers        | Notes |
+| -------- | ------------------ | ----- |
+| LaTeX    | `latex`, `tex`     |       |
+| AsciiDoc | `asciidoc`, `adoc` |       |
 
 ### Assembly
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| x86 Assembly | `x86asm` | |
-| ARM Assembly | `armasm`, `arm` | |
-| AVR Assembly | `avrasm` | |
-| MIPS Assembly | `mipsasm` | |
-| LLVM IR | `llvm` | |
+
+| Language      | Identifiers     | Notes |
+| ------------- | --------------- | ----- |
+| x86 Assembly  | `x86asm`        |       |
+| ARM Assembly  | `armasm`, `arm` |       |
+| AVR Assembly  | `avrasm`        |       |
+| MIPS Assembly | `mipsasm`       |       |
+| LLVM IR       | `llvm`          |       |
 
 ### Special Purpose
-| Language | Identifiers | Notes |
-|----------|------------|-------|
-| Diff | `diff` | Shows added/removed lines in green/red |
-| Fix | `fix` | FIX protocol |
-| GLSL | `glsl` | OpenGL shading language |
-| Prolog | `prolog` | |
-| XL | `xl` | Extensible language |
-| Plaintext | `text`, `plaintext`, `txt` | No highlighting |
+
+| Language  | Identifiers                | Notes                                  |
+| --------- | -------------------------- | -------------------------------------- |
+| Diff      | `diff`                     | Shows added/removed lines in green/red |
+| Fix       | `fix`                      | FIX protocol                           |
+| GLSL      | `glsl`                     | OpenGL shading language                |
+| Prolog    | `prolog`                   |                                        |
+| XL        | `xl`                       | Extensible language                    |
+| Plaintext | `text`, `plaintext`, `txt` | No highlighting                        |
 
 ## Diff Highlighting
 
