@@ -1,31 +1,152 @@
 ---
 name: discord-markdown
-description: Format text for Discord using markdown syntax. Use when composing Discord messages, bot responses, embed descriptions, forum posts, webhook payloads, or any content destined for Discord's chat interface. Triggers on requests mentioning Discord formatting, Discord messages, Discord bots, Discord embeds, or when the user needs text styled for Discord's rendering engine. Covers bold, italic, underline, strikethrough, spoilers, code blocks with syntax highlighting, headers, subtext, lists, block quotes, masked links, timestamps, and mentions.
+description: Format text for Discord using markdown syntax. Use when composing Discord messages, bot responses, embed descriptions, forum posts, webhook payloads, or any content destined for Discord's chat interface. Triggers on requests mentioning Discord formatting, Discord messages, Discord bots, Discord embeds, or when the user needs text styled for Discord's rendering engine. Covers bold, italic, underline, strikethrough, spoilers, code blocks with syntax highlighting, headers, subtext, lists, block quotes, masked links, timestamps, and mentions. Always presents Discord-ready messages inside fenced code blocks so the user can copy-paste them directly into Discord with all markdown formatting preserved.
 ---
 
 # Discord Markdown Formatting
 
 Format text for Discord's chat rendering engine. Discord uses a modified subset of Markdown with some unique additions (spoilers, timestamps, subtext, guild navigation).
 
+## Output Presentation — CRITICAL
+
+When composing a Discord message for the user, **always present the final message inside a fenced code block** so the user can copy-paste it directly into Discord with all markdown formatting intact.
+
+**Why:** Claude's chat interface renders markdown (e.g., `**bold**` becomes **bold**). If the user copies rendered text, the markdown syntax is stripped and the message loses its formatting when pasted into Discord. A code block preserves the raw syntax.
+
+### How to Present Discord Messages
+
+Always wrap the final copy-paste-ready message in a fenced code block with the `markdown` language tag:
+
+````
+```markdown
+# 🚀 Announcement
+
+**This is bold** and ~~this is struck~~ and ||this is a spoiler||
+
+> Block quote here
+
+-# Subtext footer
+```
+````
+
+### Rules
+
+1. **Always use a fenced code block** — Triple backticks with `markdown` language identifier
+2. **One clean block per message** — The code block should contain ONLY the Discord-ready content, no commentary or explanations inside it
+3. **Explain outside the block** — Put any notes, options, or context _before_ or _after_ the code block, never inside it
+4. **Handle nested code blocks** — If the Discord message itself contains code blocks, use four backticks (``````) as the outer fence so the inner triple backticks are preserved:
+
+`````
+````markdown
+Here's some code:
+
+```javascript
+console.log("hello");
+```
+
+Pretty cool right?
+````
+`````
+
+5. **Multiple messages = multiple blocks** — If providing alternatives or a multi-message sequence, use a separate code block for each with a label above it
+6. **Message metadata summary** — Always display a metadata summary table immediately after every Discord message code block (see below)
+7. **Templates too** — When presenting templates from the reference files, they should also be in copyable code blocks following these same rules
+
+### Message Metadata Summary
+
+After **every** Discord message code block, include a summary table with the following stats:
+
+| Stat                 | Description                                       | How to Count                                                                                                            |
+| -------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Characters**       | Total character count of the message              | Count all characters inside the code block. Show as `X / 2,000` for chat messages or `X / 4,096` for embed descriptions |
+| **Sections**         | Number of header-delimited sections               | Count all `#`, `##`, `###` headers. If no headers, show `0`                                                             |
+| **User Mentions**    | Users mentioned via `<@USER_ID>` or `<@!USER_ID>` | Count unique `<@...>` patterns (not role mentions)                                                                      |
+| **Role Mentions**    | Roles mentioned via `<@&ROLE_ID>`                 | Count unique `<@&...>` patterns. Include `@everyone` and `@here`                                                        |
+| **Channel Mentions** | Channels linked via `<#CHANNEL_ID>` or `<id:...>` | Count unique `<#...>` and `<id:...>` patterns                                                                           |
+| **URLs**             | Links in the message                              | Count raw URLs and masked links `[text](url)`                                                                           |
+| **Code Blocks**      | Code blocks with language info                    | If the message contains fenced code blocks, list languages used (e.g., `javascript`, `bash`). Show `—` if none          |
+
+Format the summary as a compact table directly below the code block:
+
+```
+| Stat               | Value          |
+|--------------------|----------------|
+| Characters         | 437 / 2,000    |
+| Sections           | 3              |
+| User Mentions      | 1              |
+| Role Mentions      | 1 (@everyone)  |
+| Channel Mentions   | 0              |
+| URLs               | 0              |
+| Code Blocks        | —              |
+```
+
+**Notes:**
+
+- For role mentions, parenthetically note if `@everyone` or `@here` is included since those ping the entire server
+- For code blocks, list each language, e.g. `javascript, bash` — or `(no lang)` if the block has no language identifier
+- If characters exceed 80% of the limit, add a ⚠️ warning
+- If characters exceed the limit, add a 🚫 and suggest splitting the message
+
+### Example Interaction
+
+**User:** "Write me an announcement for my Discord server about a new app launch"
+
+**Claude's response should look like:**
+
+Here's your launch announcement:
+
+```markdown
+# 🎊 App Name is Live!
+
+After months of building, **App Name** is officially available on iOS and Android.
+
+### Key Features
+
+- **Feature 1** — description
+- **Feature 2** — description
+
+### Get It Now
+
+- 📱 iOS: https://apps.apple.com/app/example
+- 🤖 Android: https://play.google.com/store/apps/details?id=example
+
+> 🐛 Found a bug? Report it in <#CHANNEL_ID>
+
+-# Built by <@USER_ID> • v1.0.0
+```
+
+| Stat             | Value       |
+| ---------------- | ----------- |
+| Characters       | 374 / 2,000 |
+| Sections         | 3           |
+| User Mentions    | 1           |
+| Role Mentions    | 0           |
+| Channel Mentions | 1           |
+| URLs             | 2           |
+| Code Blocks      | —           |
+
+---
+
 ## Quick Reference
 
-| Style | Syntax | Renders As |
-|-------|--------|------------|
-| Bold | `**text**` | **text** |
-| Italic | `*text*` or `_text_` | *text* |
-| Underline | `__text__` | underlined text |
-| Strikethrough | `~~text~~` | ~~text~~ |
-| Spoiler | `\|\|text\|\|` | hidden until clicked |
-| Inline code | `` `code` `` | monospaced |
-| Bold italic | `***text***` | ***text*** |
-| Underline italic | `__*text*__` | underlined italic |
-| Underline bold | `__**text**__` | underlined bold |
-| Underline bold italic | `__***text***__` | all three |
-| Strikethrough bold | `~~**text**~~` | struck bold |
+| Style                 | Syntax               | Renders As           |
+| --------------------- | -------------------- | -------------------- |
+| Bold                  | `**text**`           | **text**             |
+| Italic                | `*text*` or `_text_` | _text_               |
+| Underline             | `__text__`           | underlined text      |
+| Strikethrough         | `~~text~~`           | ~~text~~             |
+| Spoiler               | `\|\|text\|\|`       | hidden until clicked |
+| Inline code           | `` `code` ``         | monospaced           |
+| Bold italic           | `***text***`         | **_text_**           |
+| Underline italic      | `__*text*__`         | underlined italic    |
+| Underline bold        | `__**text**__`       | underlined bold      |
+| Underline bold italic | `__***text***__`     | all three            |
+| Strikethrough bold    | `~~**text**~~`       | struck bold          |
 
 ## Text Formatting
 
 ### Emphasis
+
 ```
 *italic* or _italic_
 **bold**
@@ -36,6 +157,7 @@ __underline__
 ```
 
 ### Combining Styles
+
 Nest formatting markers from outside in. Discord resolves them in this order: underline → bold → italic → strikethrough.
 
 ```
@@ -48,7 +170,9 @@ __***bold italic underline***__
 ```
 
 ### Escaping
+
 Prefix any markdown character with `\` to display it literally:
+
 ```
 \*not italic\*
 \*\*not bold\*\*
@@ -78,12 +202,15 @@ Small, muted gray text below content. Useful for footnotes, disclaimers, or attr
 ## Block Quotes
 
 ### Single-line
+
 ```
 > This is a single block quote
 ```
 
 ### Multi-line
+
 Everything after `>>>` (including subsequent lines) becomes quoted:
+
 ```
 >>> This entire block
 including this line
@@ -94,7 +221,9 @@ are all quoted
 ## Lists
 
 ### Unordered
+
 Use `-` or `*` with a space. Indent with spaces for nesting:
+
 ```
 - Item one
 - Item two
@@ -104,6 +233,7 @@ Use `-` or `*` with a space. Indent with spaces for nesting:
 ```
 
 ### Ordered
+
 ```
 1. First item
 2. Second item
@@ -111,6 +241,7 @@ Use `-` or `*` with a space. Indent with spaces for nesting:
 ```
 
 **Auto-numbering trick:** Discord auto-increments if you repeat `1.`:
+
 ```
 1. First
 1. Second (renders as 2.)
@@ -120,12 +251,15 @@ Use `-` or `*` with a space. Indent with spaces for nesting:
 ## Code Blocks
 
 ### Inline Code
+
 ```
 Use `inline code` for short snippets
 ```
 
 ### Multi-line Code Block
+
 Wrap code with triple backticks on their own lines:
+
 ````
 ```
 function hello() {
@@ -135,7 +269,9 @@ function hello() {
 ````
 
 ### Syntax Highlighting
+
 Add a language identifier after the opening backticks:
+
 ````
 ```javascript
 function hello() {
@@ -151,6 +287,7 @@ See [references/syntax-highlighting.md](references/syntax-highlighting.md) for t
 ## Links
 
 ### Masked Links
+
 ```
 [Click here](https://example.com)
 ```
@@ -158,13 +295,17 @@ See [references/syntax-highlighting.md](references/syntax-highlighting.md) for t
 **Note:** Masked links work in embeds and some contexts, but regular chat may show a preview. Discord may suppress masked links from bots in certain conditions.
 
 ### Auto-linking
+
 Discord auto-links any valid URL pasted directly:
+
 ```
 Check out https://example.com for more info
 ```
 
 ### Suppressing Link Previews
+
 Wrap a URL in angle brackets to prevent Discord from generating a preview embed:
+
 ```
 <https://example.com>
 ```
@@ -175,17 +316,18 @@ Dynamic timestamps that display in each user's local timezone.
 
 **Format:** `<t:UNIX_TIMESTAMP:FORMAT_FLAG>`
 
-| Flag | Output Style | Example |
-|------|-------------|---------|
-| `t` | Short time | `4:20 PM` |
-| `T` | Long time | `4:20:30 PM` |
-| `d` | Short date | `02/08/2026` |
-| `D` | Long date | `February 8, 2026` |
-| `f` | Short date/time (default) | `February 8, 2026 4:20 PM` |
-| `F` | Long date/time | `Sunday, February 8, 2026 4:20 PM` |
-| `R` | Relative | `2 hours ago` |
+| Flag | Output Style              | Example                            |
+| ---- | ------------------------- | ---------------------------------- |
+| `t`  | Short time                | `4:20 PM`                          |
+| `T`  | Long time                 | `4:20:30 PM`                       |
+| `d`  | Short date                | `02/08/2026`                       |
+| `D`  | Long date                 | `February 8, 2026`                 |
+| `f`  | Short date/time (default) | `February 8, 2026 4:20 PM`         |
+| `F`  | Long date/time            | `Sunday, February 8, 2026 4:20 PM` |
+| `R`  | Relative                  | `2 hours ago`                      |
 
 **Example:**
+
 ```
 Event starts <t:1770537600:F>
 That was <t:1770537600:R>
@@ -228,19 +370,26 @@ That was <t:1770537600:R>
 
 ## Formatting for Different Contexts
 
+> **Reminder:** Regardless of context, always present the final Discord-ready message inside a fenced code block so the user can copy-paste it directly. See "Output Presentation" above.
+
 ### Chat Messages
+
 Full markdown support. 2,000 character limit (4,000 with Nitro).
 
 ### Embed Descriptions
+
 Full markdown support. 4,096 character limit. Masked links work reliably here.
 
 ### Embed Field Values
+
 Limited markdown. 1,024 character limit per field.
 
 ### Bot Messages / Webhooks
+
 Full markdown support. Same as chat messages. Use embeds for richer formatting.
 
 ### Forum Posts
+
 Full markdown support in the post body. Title is plain text only.
 
 ## Resources
