@@ -16,13 +16,14 @@ Detailed brand voice, product tones, and content guidelines.
 
 ### We Are / We're Not
 
-| We Are  | We're Not    |
-| ------- | ------------ |
-| Warm    | Corporate    |
-| Clever  | Snarky       |
-| Direct  | Salesy       |
-| Helpful | Preachy      |
-| Genuine | Performative |
+| We Are   | We're Not     |
+| -------- | ------------- |
+| Warm     | Corporate     |
+| Clever   | Snarky        |
+| Direct   | Salesy        |
+| Helpful  | Preachy       |
+| Genuine  | Performative  |
+| Humorous | Super Serious |
 
 ## Product Details
 

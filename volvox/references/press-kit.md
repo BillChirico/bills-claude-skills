@@ -34,6 +34,18 @@ Bill Chirico is the founder and CEO of Volvox LLC, a New Jersey-based software c
 
 ---
 
+## Why the name "Volvox"?
+
+Volvox is a colonial green algae—a microscopic organism where thousands of individual cells form a single, rolling sphere. Each cell has its own job, but none of them go rogue and start a side hustle. They work together, no hierarchy, no corner offices, no cells claiming they "basically built the whole colony."
+
+Every cell contributes to the movement, survival, and reproduction of the whole organism. It's cooperation baked into biology—collaboration isn't a company value plastered on a wall, it's literally how they stay alive.
+
+That's the energy we wanted for Volvox LLC. We build software the same way: every contributor matters, every line of code serves the product, and the community isn't a marketing buzzword—it's the foundation we grew from. Our developer community started in 2018, two years before we ever shipped a product. The community came first because that's how Volvox actually works in nature. The colony comes first.
+
+So yes, we named a software company after pond algae. But when you find an organism that figured out teamwork about 200 million years before corporate America tried, you take the name and run with it.
+
+---
+
 ## Team
 
 | Name              | Role                             |
